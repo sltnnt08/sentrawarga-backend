@@ -1,0 +1,7 @@
+model ReportImage {
+    id       String @id @default(uuid())
+    url      String
+    reportId String
+
+    report Report @relation(fields: [reportId], references: [id])
+}

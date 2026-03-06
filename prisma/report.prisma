@@ -1,0 +1,22 @@
+model Report {
+    id          String     @id @default(uuid())
+    title       String
+    description String
+    category    Category[]
+    priority    Priority
+    latitiude   Float?
+    longitude   Float?
+    address     String?
+
+    resolvedAt DateTime?
+    status     ReportStatus
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    reporterId String
+    reporter   User   @relation(fields: [reporterId], references: [id])
+
+    votes        Vote[]
+    reportImages ReportImage[]
+}
