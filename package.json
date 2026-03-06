@@ -2,14 +2,16 @@
   "name": "sentrawarga-backend",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "nodemon ./src/server.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint ./src"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/sltnnt08/sentrawarga-backend.git"
-  },
+  },  
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -18,11 +20,19 @@
   },
   "homepage": "https://github.com/sltnnt08/sentrawarga-backend#readme",
   "dependencies": {
+    "@prisma/adapter-pg": "^7.4.2",
+    "@prisma/client": "^7.4.2",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "pg": "^8.20.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "@eslint/js": "^10.0.1",
+    "@eslint/json": "^1.0.1",
+    "eslint": "^10.0.2",
+    "globals": "^17.4.0",
+    "nodemon": "^3.1.14",
+    "prisma": "^7.4.2"
   }
 }
