@@ -1,0 +1,10 @@
+model Vote {
+  id String @id @default(uuid())
+
+  userId   String
+  reportId String
+  type     VoteType
+
+  user   User   @relation(fields: [userId], references: [id])
+  report Report @relation(fields: [reportId], references: [id])
+}

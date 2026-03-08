@@ -11,3 +11,5 @@ build
 .log
 logs
 /src/generated/prisma
+
+*.pdf
