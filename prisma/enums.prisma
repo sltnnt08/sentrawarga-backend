@@ -32,3 +32,10 @@ enum VoteType {
   UP
   DOWN
 }
+
+enum NotificationType {
+  REPORT_STATUS_CHANGED
+  NEW_COMMENT
+  REPORT_RESOLVED
+  ADMIN_REPLY
+}
