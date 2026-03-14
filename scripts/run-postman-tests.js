@@ -7,7 +7,7 @@ const rootDir = process.cwd();
 const reportsDir = path.join(rootDir, 'reports', 'newman');
 const collectionPath = path.join(rootDir, 'postman', 'SentraWarga Backend.postman_collection.json');
 const environmentPath = path.join(rootDir, 'postman', 'SentraWarga Local.postman_environment.json');
-const baseUrl = 'http://0.0.0.0:3000';
+const baseUrl = process.env.POSTMAN_BASE_URL ?? 'http://localhost:3000';
 
 const collection = JSON.parse(fs.readFileSync(collectionPath, 'utf8'));
 const environment = JSON.parse(fs.readFileSync(environmentPath, 'utf8'));
