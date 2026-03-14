@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "f5f7cb91-b536-468b-8344-fb0d39acc55d",
 		"name": "SentraWarga Backend",
-		"description": "Collection for SentraWarga backend auth and reports APIs.",
+		"description": "End-to-end API test suite for SentraWarga backend (health, auth, reports, comments, votes, notifications).",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"auth": {
@@ -18,13 +18,87 @@
 	"item": [
 		{
 			"name": "Health - Root",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Root returns 200', function () {",
+							"  pm.response.to.have.status(200);",
+							"});"
+						]
+					}
+				}
+			],
 			"request": {
+				"auth": {
+					"type": "noauth"
+				},
 				"method": "GET",
 				"header": [],
 				"url": {
 					"raw": "{{baseUrl}}/",
 					"host": ["{{baseUrl}}"],
 					"path": [""]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Health - Live",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Healthz returns 200', function () {",
+							"  pm.response.to.have.status(200);",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/healthz",
+					"host": ["{{baseUrl}}"],
+					"path": ["healthz"]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Health - Ready",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Readyz returns 200', function () {",
+							"  pm.response.to.have.status(200);",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/readyz",
+					"host": ["{{baseUrl}}"],
+					"path": ["readyz"]
 				}
 			},
 			"response": []
@@ -39,7 +113,10 @@
 							"listen": "prerequest",
 							"script": {
 								"exec": [
-									"pm.environment.set('testEmail', `postman.${Date.now()}@example.com`);"
+									"pm.environment.set('testEmail', `postman.${Date.now()}@example.com`);",
+									"pm.environment.unset('accessToken');",
+									"pm.environment.unset('reportId');",
+									"pm.environment.unset('notificationId');"
 								],
 								"type": "text/javascript"
 							}
@@ -49,22 +126,25 @@
 							"script": {
 								"exec": [
 									"pm.test('Register success status', function () {",
-									"  pm.expect(pm.response && pm.response.code).to.eql(201);",
+									"  pm.expect(pm.response.code).to.eql(201);",
 									"});",
-									"const json = pm.response && pm.response.text() ? pm.response.json() : {};",
-									"pm.test('Register returns access token', function () {",
+									"const json = pm.response.json();",
+									"pm.test('Register returns access token and user', function () {",
 									"  pm.expect(json.success).to.eql(true);",
 									"  pm.expect(json.data.accessToken).to.be.a('string');",
+									"  pm.expect(json.data.user.id).to.be.a('string');",
 									"});",
-									"if (json.data && json.data.accessToken) {",
-									"  pm.environment.set('accessToken', json.data.accessToken);",
-									"}"
+									"pm.environment.set('accessToken', json.data.accessToken);",
+									"pm.environment.set('userId', json.data.user.id);"
 								],
 								"type": "text/javascript"
 							}
 						}
 					],
 					"request": {
+						"auth": {
+							"type": "noauth"
+						},
 						"method": "POST",
 						"header": [
 							{
@@ -92,22 +172,24 @@
 							"script": {
 								"exec": [
 									"pm.test('Login success status', function () {",
-									"  pm.expect(pm.response && pm.response.code).to.eql(200);",
+									"  pm.expect(pm.response.code).to.eql(200);",
 									"});",
-									"const json = pm.response && pm.response.text() ? pm.response.json() : {};",
-									"pm.test('Login returns access token', function () {",
+									"const json = pm.response.json();",
+									"pm.test('Login returns access token and user', function () {",
 									"  pm.expect(json.success).to.eql(true);",
 									"  pm.expect(json.data.accessToken).to.be.a('string');",
+									"  pm.expect(json.data.user.id).to.be.a('string');",
 									"});",
-									"if (json.data && json.data.accessToken) {",
-									"  pm.environment.set('accessToken', json.data.accessToken);",
-									"}"
+									"pm.environment.set('accessToken', json.data.accessToken);"
 								],
 								"type": "text/javascript"
 							}
 						}
 					],
 					"request": {
+						"auth": {
+							"type": "noauth"
+						},
 						"method": "POST",
 						"header": [
 							{
@@ -129,17 +211,26 @@
 				},
 				{
 					"name": "Me",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Me success status', function () {",
+									"  pm.expect(pm.response.code).to.eql(200);",
+									"});",
+									"const json = pm.response.json();",
+									"pm.test('Me returns user object', function () {",
+									"  pm.expect(json.success).to.eql(true);",
+									"  pm.expect(json.data.id).to.be.a('string');",
+									"  pm.expect(json.data.email).to.be.a('string');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{accessToken}}",
-									"type": "string"
-								}
-							]
-						},
 						"method": "GET",
 						"header": [],
 						"url": {
@@ -157,6 +248,24 @@
 			"item": [
 				{
 					"name": "List Reports",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('List reports success status', function () {",
+									"  pm.expect(pm.response.code).to.eql(200);",
+									"});",
+									"const json = pm.response.json();",
+									"pm.test('List reports returns items array', function () {",
+									"  pm.expect(json.success).to.eql(true);",
+									"  pm.expect(json.data.items).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"auth": {
 							"type": "noauth"
@@ -164,7 +273,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/reports?page=1&limit=10&status=PENDING",
+							"raw": "{{baseUrl}}/api/reports?page=1&limit=10",
 							"host": ["{{baseUrl}}"],
 							"path": ["api", "reports"],
 							"query": [
@@ -175,10 +284,6 @@
 								{
 									"key": "limit",
 									"value": "10"
-								},
-								{
-									"key": "status",
-									"value": "PENDING"
 								}
 							]
 						}
@@ -193,32 +298,20 @@
 							"script": {
 								"exec": [
 									"pm.test('Create report success status', function () {",
-									"  pm.expect(pm.response && pm.response.code).to.eql(201);",
+									"  pm.expect(pm.response.code).to.eql(201);",
 									"});",
-									"const json = pm.response && pm.response.text() ? pm.response.json() : {};",
+									"const json = pm.response.json();",
 									"pm.test('Create report returns id', function () {",
 									"  pm.expect(json.success).to.eql(true);",
 									"  pm.expect(json.data.id).to.be.a('string');",
 									"});",
-									"if (json.data && json.data.id) {",
-									"  pm.environment.set('reportId', json.data.id);",
-									"}"
+									"pm.environment.set('reportId', json.data.id);"
 								],
 								"type": "text/javascript"
 							}
 						}
 					],
 					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{accessToken}}",
-									"type": "string"
-								}
-							]
-						},
 						"method": "POST",
 						"header": [
 							{
@@ -228,12 +321,360 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"title\": \"Jalan rusak depan sekolah\",\n  \"description\": \"Lubang besar di jalan utama depan sekolah, membahayakan pengendara.\",\n  \"category\": [\"ROADS_ISSUE\"],\n  \"priority\": \"HIGH\",\n  \"address\": \"{{testAddress}}\",\n  \"latitude\": -6.2,\n  \"longitude\": 106.816\n}"
+							"raw": "{\n  \"title\": \"Jalan rusak depan sekolah\",\n  \"description\": \"Lubang besar di jalan utama depan sekolah, membahayakan pengendara motor dan mobil.\",\n  \"category\": [\"ROADS_ISSUE\"],\n  \"priority\": \"HIGH\",\n  \"address\": \"{{testAddress}}\",\n  \"latitude\": -6.2,\n  \"longitude\": 106.816\n}"
 						},
 						"url": {
 							"raw": "{{baseUrl}}/api/reports",
 							"host": ["{{baseUrl}}"],
 							"path": ["api", "reports"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Report Detail",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Get report detail success status', function () {",
+									"  pm.expect(pm.response.code).to.eql(200);",
+									"});",
+									"const json = pm.response.json();",
+									"pm.test('Get report detail returns report', function () {",
+									"  pm.expect(json.success).to.eql(true);",
+									"  pm.expect(json.data.id).to.eql(pm.environment.get('reportId'));",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/reports/{{reportId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "reports", "{{reportId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Report Status",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Update report status hits endpoint', function () {",
+									"  pm.expect([200, 403]).to.include(pm.response.code);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"IN_PROGRESS\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/reports/{{reportId}}/status",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "reports", "{{reportId}}", "status"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Comments",
+					"item": [
+						{
+							"name": "List Comments",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test('List comments success status', function () {",
+											"  pm.expect(pm.response.code).to.eql(200);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/reports/{{reportId}}/comments?page=1&limit=10",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "reports", "{{reportId}}", "comments"],
+									"query": [
+										{
+											"key": "page",
+											"value": "1"
+										},
+										{
+											"key": "limit",
+											"value": "10"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create Comment",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test('Create comment success status', function () {",
+											"  pm.expect(pm.response.code).to.eql(201);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"content\": \"Terima kasih, laporan ini sangat membantu.\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/reports/{{reportId}}/comments",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "reports", "{{reportId}}", "comments"]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Votes",
+					"item": [
+						{
+							"name": "Get Vote Summary",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test('Get vote summary success status', function () {",
+											"  pm.expect(pm.response.code).to.eql(200);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/reports/{{reportId}}/votes",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "reports", "{{reportId}}", "votes"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Set Vote",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test('Set vote success status', function () {",
+											"  pm.expect(pm.response.code).to.eql(200);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"type\": \"UP\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/reports/{{reportId}}/votes",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "reports", "{{reportId}}", "votes"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Remove Vote",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test('Remove vote success status', function () {",
+											"  pm.expect(pm.response.code).to.eql(200);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/reports/{{reportId}}/votes",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "reports", "{{reportId}}", "votes"]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Notifications",
+			"item": [
+				{
+					"name": "List Notifications",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('List notifications success status', function () {",
+									"  pm.expect(pm.response.code).to.eql(200);",
+									"});",
+									"const json = pm.response.json();",
+									"if (json.data.items.length > 0 && json.data.items[0].id) {",
+									"  pm.environment.set('notificationId', json.data.items[0].id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications?page=1&limit=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "notifications"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Mark All Notifications Read",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Mark all notifications read success status', function () {",
+									"  pm.expect(pm.response.code).to.eql(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications/read-all",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "notifications", "read-all"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Mark One Notification Read",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if (!pm.environment.get('notificationId')) {",
+									"  pm.environment.set('notificationId', '00000000-0000-0000-0000-000000000000');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Mark one notification read hits endpoint', function () {",
+									"  pm.expect([200, 404]).to.include(pm.response.code);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications/{{notificationId}}/read",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "notifications", "{{notificationId}}", "read"]
 						}
 					},
 					"response": []
