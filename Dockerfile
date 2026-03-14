@@ -13,6 +13,6 @@ COPY prisma ./prisma
 COPY src ./src
 COPY prisma.config.ts ./prisma.config.ts
 
-EXPOSE 3000
+RUN DATABASE_URL="postgresql://dummy:dummy@dummy:5432/dummy" npx prisma generate
 
-CMD ["node", "./src/server.js"]
+EXPOSE 3000
