@@ -8,8 +8,7 @@ export default defineConfig({
 	migrations: {
 		path: 'prisma/migrations',
 	},
-	engine: 'classic',
 	datasource: {
-		url: 'postgresql://postgres:root@localhost:5432/sentrawarga',
+		url: env('DATABASE_URL'),
 	},
 });

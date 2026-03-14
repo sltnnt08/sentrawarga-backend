@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Prisma generate
+        run: npx prisma generate
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/sentrawarga
+
+      - name: Tests
+        run: npm test
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/sentrawarga
+          JWT_SECRET: this-is-a-safe-ci-jwt-secret
+
+      - name: Postman suite
+        run: npm run test:postman
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/sentrawarga
+          JWT_SECRET: this-is-a-safe-ci-jwt-secret
+
+      - name: Security audit (non-blocking)
+        run: npm audit --omit=dev || true

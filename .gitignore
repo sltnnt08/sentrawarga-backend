@@ -1,15 +1,23 @@
-node_modules
+node_modules/
 
 .env
+.env.*
+!.env.example
 
-package-lock.json
+.vscode/
 
-.vscode
+dist/
+build/
+coverage/
+.nyc_output/
 
-dist
-build
-.log
-logs
-/src/generated/prisma
+*.log
+logs/
+
+reports/
+
+/src/generated/prisma/
+
+postman/*.postman_environment.local.json
 
 *.pdf
