@@ -47,10 +47,16 @@ npm ci --omit=dev
 npm start
 ```
 
-For managed Postgres providers that expose pooled and direct URLs (for example Supabase), run migrations using direct URL:
+For managed Postgres providers that require a private/VPN path for direct DB access, run migrations from your own environment (with Warp) and do not run migrations in Render build:
 
 ```bash
-npm run migrate:deploy
+npm run migrate:warp
+```
+
+Render build command recommendation:
+
+```bash
+npm run build:render
 ```
 
 ## Health Endpoints

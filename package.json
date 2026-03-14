@@ -12,7 +12,9 @@
 		"test:all": "npm run test && npm run test:postman",
 		"gen:jwt-secret": "node ./scripts/generate-jwt-secret.js",
 		"lint": "eslint ./src",
-		"migrate:deploy": "DATABASE_URL=${DIRECT_URL:-$DATABASE_URL} npx prisma migrate deploy",
+		"build:render": "npm install && npx prisma generate",
+		"migrate:deploy": "PRISMA_SCHEMA_DISABLE_ADVISORY_LOCK=1 npx prisma migrate deploy",
+		"migrate:warp": "warp-cli connect && sleep 3 && npx prisma migrate deploy && warp-cli disconnect",
 		"migrate": "warp-cli connect && sleep 3 && npx prisma migrate deploy && warp-cli disconnect"
 	},
 	"repository": {
