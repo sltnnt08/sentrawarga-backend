@@ -14,6 +14,7 @@ Copy and adjust values in `.env`.
 - `NODE_ENV` (`development` | `test` | `production`)
 - `PORT`
 - `DATABASE_URL`
+- `DIRECT_URL` (direct DB connection used by Prisma migrations)
 - `CORS_ORIGIN` (single origin or comma-separated allowlist)
 - `JWT_SECRET` (minimum 16 characters)
 - `JWT_EXPIRES_IN`
