@@ -11,7 +11,8 @@
 		"test:postman": "node ./scripts/run-postman-tests.js",
 		"test:all": "npm run test && npm run test:postman",
 		"gen:jwt-secret": "node ./scripts/generate-jwt-secret.js",
-		"lint": "eslint ./src"
+		"lint": "eslint ./src",
+		"migrate": "warp-cli connect && sleep 3 && npx prisma migrate deploy && warp-cli disconnect"
 	},
 	"repository": {
 		"type": "git",
