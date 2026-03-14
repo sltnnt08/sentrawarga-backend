@@ -47,6 +47,12 @@ npm ci --omit=dev
 npm start
 ```
 
+For managed Postgres providers that expose pooled and direct URLs (for example Supabase), run migrations using direct URL:
+
+```bash
+npm run migrate:deploy
+```
+
 ## Health Endpoints
 
 - `GET /healthz`: liveness
