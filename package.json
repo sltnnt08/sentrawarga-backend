@@ -10,6 +10,7 @@
 		"test:watch": "node --test --watch",
 		"test:postman": "node ./scripts/run-postman-tests.js",
 		"test:all": "npm run test && npm run test:postman",
+		"gen:jwt-secret": "node ./scripts/generate-jwt-secret.js",
 		"lint": "eslint ./src"
 	},
 	"repository": {
