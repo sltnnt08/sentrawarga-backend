@@ -1,5 +1,19 @@
 import { env } from '../config/env.js';
 
+const buildErrorLogPayload = (error, req, statusCode) => ({
+	level: statusCode >= 500 ? 'error' : 'warn',
+	time: new Date().toISOString(),
+	requestId: req.requestId,
+	method: req.method,
+	path: req.originalUrl,
+	statusCode,
+	errorName: error?.name,
+	errorMessage: error?.message,
+	errorCode: error?.code,
+	errorStack: error?.stack,
+	errorDetails: error?.details,
+});
+
 export const notFoundHandler = (req, res) => {
 	res.status(404).json({
 		success: false,
@@ -16,6 +30,8 @@ export const errorHandler = (error, req, res, next) => {
 	const statusCode = error.statusCode ?? 500;
 	const isServerError = statusCode >= 500;
 	const message = isServerError && env.nodeEnv === 'production' ? 'Internal server error' : error.message;
+
+	console.error(JSON.stringify(buildErrorLogPayload(error, req, statusCode)));
 
 	res.status(statusCode).json({
 		success: false,

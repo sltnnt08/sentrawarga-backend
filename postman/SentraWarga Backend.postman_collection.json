@@ -49,14 +49,16 @@
 							"script": {
 								"exec": [
 									"pm.test('Register success status', function () {",
-									"  pm.response.to.have.status(201);",
+									"  pm.expect(pm.response && pm.response.code).to.eql(201);",
 									"});",
-									"const json = pm.response.json();",
+									"const json = pm.response && pm.response.text() ? pm.response.json() : {};",
 									"pm.test('Register returns access token', function () {",
 									"  pm.expect(json.success).to.eql(true);",
 									"  pm.expect(json.data.accessToken).to.be.a('string');",
 									"});",
-									"pm.environment.set('accessToken', json.data.accessToken);"
+									"if (json.data && json.data.accessToken) {",
+									"  pm.environment.set('accessToken', json.data.accessToken);",
+									"}"
 								],
 								"type": "text/javascript"
 							}
@@ -90,14 +92,16 @@
 							"script": {
 								"exec": [
 									"pm.test('Login success status', function () {",
-									"  pm.response.to.have.status(200);",
+									"  pm.expect(pm.response && pm.response.code).to.eql(200);",
 									"});",
-									"const json = pm.response.json();",
+									"const json = pm.response && pm.response.text() ? pm.response.json() : {};",
 									"pm.test('Login returns access token', function () {",
 									"  pm.expect(json.success).to.eql(true);",
 									"  pm.expect(json.data.accessToken).to.be.a('string');",
 									"});",
-									"pm.environment.set('accessToken', json.data.accessToken);"
+									"if (json.data && json.data.accessToken) {",
+									"  pm.environment.set('accessToken', json.data.accessToken);",
+									"}"
 								],
 								"type": "text/javascript"
 							}
@@ -189,14 +193,16 @@
 							"script": {
 								"exec": [
 									"pm.test('Create report success status', function () {",
-									"  pm.response.to.have.status(201);",
+									"  pm.expect(pm.response && pm.response.code).to.eql(201);",
 									"});",
-									"const json = pm.response.json();",
+									"const json = pm.response && pm.response.text() ? pm.response.json() : {};",
 									"pm.test('Create report returns id', function () {",
 									"  pm.expect(json.success).to.eql(true);",
 									"  pm.expect(json.data.id).to.be.a('string');",
 									"});",
-									"pm.environment.set('reportId', json.data.id);"
+									"if (json.data && json.data.id) {",
+									"  pm.environment.set('reportId', json.data.id);",
+									"}"
 								],
 								"type": "text/javascript"
 							}
