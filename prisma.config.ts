@@ -3,8 +3,10 @@
 import 'dotenv/config';
 import { defineConfig } from 'prisma/config';
 
-const prismaDatasourceUrl = process.env.DIRECT_URL ?? process.env.DATABASE_URL;
-// const prismaDatasourceUrl = process.env.DATABASE_URL;
+const useDirectUrl = process.env.PRISMA_CLI_USE_DIRECT_URL === 'true';
+const prismaDatasourceUrl = useDirectUrl
+	? (process.env.DIRECT_URL ?? process.env.DATABASE_URL)
+	: (process.env.DATABASE_URL ?? process.env.DIRECT_URL);
 
 if (!prismaDatasourceUrl) {
 	throw new Error(
