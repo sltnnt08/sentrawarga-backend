@@ -14,8 +14,8 @@
 		"lint": "eslint ./src",
 		"build:render": "npm install && npx prisma generate",
 		"migrate:deploy": "PRISMA_SCHEMA_DISABLE_ADVISORY_LOCK=1 npx prisma migrate deploy",
-		"migrate:warp": "warp-cli connect && sleep 3 && npx prisma migrate deploy && warp-cli disconnect",
-		"migrate": "warp-cli connect && sleep 3 && npx prisma migrate deploy && warp-cli disconnect"
+		"migrate:reset": "npx prisma migrate reset --force",
+		"migrate": "npm run migrate:deploy"
 	},
 	"repository": {
 		"type": "git",

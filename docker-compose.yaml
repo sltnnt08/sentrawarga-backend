@@ -29,6 +29,6 @@ services:
       db:
         condition: service_healthy
     command: >
-      sh -c "npx prisma migrate deploy && node ./src/server.js"
+      sh -c "npm run migrate:deploy && node ./src/server.js"
 volumes:
   pgdata:

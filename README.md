@@ -1,38 +1,164 @@
 # SentraWarga Backend
 
-Production-oriented Express + Prisma backend for SentraWarga.
+[![Node.js](https://img.shields.io/badge/Node.js-22+-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![Express](https://img.shields.io/badge/Express-5.x-000000?logo=express)](https://expressjs.com/)
+[![Prisma](https://img.shields.io/badge/Prisma-7.x-2D3748?logo=prisma)](https://www.prisma.io/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Required-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 
-## Requirements
+Backend API untuk SentraWarga berbasis **Express + Prisma + PostgreSQL**.
+Dokumen ini dibuat untuk dua audiens sekaligus:
 
-- Node.js 22+
-- PostgreSQL
+- Reviewer profesional yang butuh gambaran arsitektur, kualitas, dan deployment dengan cepat.
+- Pemula yang butuh langkah setup yang jelas dari nol.
 
-## Environment Variables
+## Highlights
 
-Copy and adjust values in `.env`.
+- Struktur modular (controller, service, validator, middleware).
+- Validasi request berbasis Zod.
+- Auth JWT + role-based authorization (contoh: admin-only action).
+- Health endpoint (`/healthz`) dan readiness endpoint (`/readyz`).
+- Test campuran: Node test runner + Postman/Newman.
+- Deploy didukung via Docker dan Render.com.
 
-- `NODE_ENV` (`development` | `test` | `production`)
-- `PORT`
-- `DATABASE_URL`
-- `DIRECT_URL` (direct DB connection used by Prisma migrations)
-- `CORS_ORIGIN` (single origin or comma-separated allowlist)
-- `JWT_SECRET` (minimum 16 characters)
-- `JWT_EXPIRES_IN`
-- `BODY_LIMIT`
-- `RATE_LIMIT_WINDOW_MS`
-- `RATE_LIMIT_MAX`
-- `AUTH_RATE_LIMIT_MAX`
-- `TRUST_PROXY`
+## Table of Contents
 
-## Run
+- [1) Prerequisites](#1-prerequisites)
+- [2) Quick Start (5 Menit)](#2-quick-start-5-menit)
+- [3) Environment Variables](#3-environment-variables)
+- [4) API Surface Ringkas](#4-api-surface-ringkas)
+- [5) Database Migration dan RLS](#5-database-migration-dan-rls)
+- [6) Testing dan Quality Gate](#6-testing-dan-quality-gate)
+- [7) Deployment](#7-deployment)
+- [8) Security Notes](#8-security-notes)
+- [9) Referensi Project](#9-referensi-project)
+
+## 1) Prerequisites
+
+- Node.js 22 atau lebih baru.
+- PostgreSQL aktif dan bisa diakses dari `DATABASE_URL`.
+- NPM (ikut bersama instalasi Node.js).
+
+## 2) Quick Start (5 Menit)
+
+1. Install dependency:
 
 ```bash
 npm ci
+```
+
+2. Buat file `.env` dari contoh lalu isi nilainya:
+
+```bash
+cp .env.example .env
+```
+
+Untuk PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+3. Generate Prisma Client:
+
+```bash
 npx prisma generate
+```
+
+4. Jalankan migration:
+
+```bash
+npm run migrate
+```
+
+5. Jalankan server development:
+
+```bash
 npm run dev
 ```
 
-Run automated tests:
+6. Verifikasi cepat:
+
+- `GET /` -> API running.
+- `GET /healthz` -> liveness.
+- `GET /readyz` -> readiness + DB check.
+
+## 3) Environment Variables
+
+Sumber konfigurasi ada di file `.env`.
+
+| Variable               | Required   | Keterangan                                      |
+| ---------------------- | ---------- | ----------------------------------------------- |
+| `NODE_ENV`             | Ya         | `development` \| `test` \| `production`         |
+| `PORT`                 | Ya         | Port HTTP server                                |
+| `DATABASE_URL`         | Ya         | Koneksi database utama                          |
+| `DIRECT_URL`           | Disarankan | Koneksi direct untuk Prisma migration           |
+| `CORS_ORIGIN`          | Ya         | Single origin atau allowlist dipisah koma       |
+| `JWT_SECRET`           | Ya         | Minimal 16 karakter                             |
+| `JWT_EXPIRES_IN`       | Ya         | Contoh: `1d`, `7d`                              |
+| `BODY_LIMIT`           | Ya         | Batas ukuran body request                       |
+| `RATE_LIMIT_WINDOW_MS` | Ya         | Window rate limit global                        |
+| `RATE_LIMIT_MAX`       | Ya         | Maksimum request per window                     |
+| `AUTH_RATE_LIMIT_MAX`  | Ya         | Maksimum request untuk endpoint auth            |
+| `TRUST_PROXY`          | Opsional   | Set `true` jika di belakang proxy/load balancer |
+
+## 4) API Surface Ringkas
+
+Base path API: `/api`
+
+- Auth:
+  - `POST /api/auth/register`
+  - `POST /api/auth/login`
+  - `GET /api/auth/me` (auth required)
+- Reports:
+  - `GET /api/reports`
+  - `POST /api/reports` (auth required)
+  - `GET /api/reports/:id`
+  - `PATCH /api/reports/:id/status` (admin only)
+- Comments:
+  - `GET /api/reports/:reportId/comments`
+  - `POST /api/reports/:reportId/comments` (auth required)
+- Votes:
+  - `GET /api/reports/:reportId/votes`
+  - `POST /api/reports/:reportId/votes` (auth required)
+  - `DELETE /api/reports/:reportId/votes` (auth required)
+- Notifications (seluruh route butuh auth):
+  - `GET /api/notifications`
+  - `PATCH /api/notifications/read-all`
+  - `PATCH /api/notifications/:id/read`
+
+Dokumentasi detail endpoint tersedia di `openapi.yaml`.
+
+## 5) Database Migration dan RLS
+
+### Migration
+
+- Prisma CLI pada project ini akan memakai `DIRECT_URL` jika tersedia, lalu fallback ke `DATABASE_URL`.
+
+- Deploy migration:
+
+```bash
+npm run migrate
+```
+
+- Reset migration (development only):
+
+```bash
+npm run migrate:reset
+```
+
+### RLS Policy (Penting)
+
+RLS **dikelola manual** dari SQL file:
+
+- Source of truth: `rls_policies.sql`
+- Jangan gunakan script automation/helper untuk apply/validate RLS.
+- Setelah perubahan schema atau reset DB, apply `rls_policies.sql` secara manual lewat Supabase SQL Editor atau SQL client.
+
+View `public."PublicUserProfile"` juga didefinisikan dari `rls_policies.sql`.
+
+## 6) Testing dan Quality Gate
+
+### Menjalankan test
 
 ```bash
 npm test
@@ -40,92 +166,60 @@ npm run test:postman
 npm run test:all
 ```
 
-Production mode:
+### Lint
 
 ```bash
-npm ci --omit=dev
-npm start
+npm run lint
 ```
 
-For managed Postgres providers that require a private/VPN path for direct DB access, run migrations from your own environment (with Warp) and do not run migrations in Render build:
-
-```bash
-npm run migrate:warp
-```
-
-Render build command recommendation:
-
-```bash
-npm run build:render
-```
-
-## Health Endpoints
-
-- `GET /healthz`: liveness
-- `GET /readyz`: readiness (checks DB query)
-
-## API Documentation
-
-OpenAPI spec is available at `openapi.yaml`.
-
-## Postman
+### Postman artifacts
 
 - Collection: `postman/SentraWarga Backend.postman_collection.json`
 - Environment: `postman/SentraWarga Local.postman_environment.json`
+- Newman JUnit report: `reports/newman/newman.xml`
 
-## CI
+### GitHub Actions workflow
 
-GitHub Actions workflow: `.github/workflows/ci.yml`
+Workflow aktif ada di `.github/workflows/deploy.yml`:
 
-Includes:
+- Job `test`: checkout, setup Node.js, install dependency, generate Prisma Client, lalu `npm test`
+- Job `deploy`: trigger deploy ke Render via `RENDER_DEPLOY_HOOK` (jalan setelah job `test` sukses)
 
-- `npm ci`
-- `npm run lint`
-- `npx prisma generate`
-- `npm test`
-- `npm run test:postman`
-- runtime dependency audit (`npm audit --omit=dev`, non-blocking)
+## 7) Deployment
 
-Postman JUnit report output:
-
-- `reports/newman/newman.xml`
-
-## Non-Docker Production Deployment
-
-Using PM2:
-
-```bash
-npm ci --omit=dev
-npx prisma generate
-npm install -g pm2
-pm2 start ecosystem.config.cjs
-pm2 save
-pm2 startup
-```
-
-Nginx reverse proxy example is provided in `deploy-nginx.conf.example`.
-
-If deployed behind proxy/load balancer, set:
-
-- `TRUST_PROXY=true`
-
-## Docker
-
-Build and run:
+### 1) Docker
 
 ```bash
 docker build -t sentrawarga-backend:latest .
 docker run --rm -p 3000:3000 --env-file .env sentrawarga-backend:latest
 ```
 
-## Security Notes
+### 2) Render.com
 
-- Security headers enabled through Helmet.
-- Global and auth-specific rate limiting enabled.
-- Request IDs are attached to responses via `X-Request-Id`.
-- Error responses include requestId for traceability.
-- In production, server errors are masked to generic messages.
+Build command yang direkomendasikan:
+
+```bash
+npm run build:render
+```
+
+Deploy dipicu dari GitHub Actions workflow `Deploy to Render` di `.github/workflows/deploy.yml`.
+
+## 8) Security Notes
+
+- Helmet untuk security headers.
+- Rate limiting global dan rate limiting khusus auth endpoint.
+- Request ID dikirim via header `X-Request-Id`.
+- Error response menyertakan `requestId` untuk traceability.
+- Pada production, detail error internal dimasking menjadi pesan generik.
+
+## 9) Referensi Project
+
+- OpenAPI spec: `openapi.yaml`
+- Prisma schema: `prisma/schema.prisma` (+ file split schema lainnya di folder `prisma`)
+- App entrypoint: `src/server.js`
+- Express app wiring: `src/app.js`
 
 ## Known Residual Risk
 
-Current transitive vulnerabilities are reported from Prisma toolchain dependencies during `npm audit --omit=dev` and require major dependency changes to fully resolve. Keep dependencies updated and monitor advisories.
+Masih ada transitive vulnerability dari toolchain Prisma saat `npm audit --omit=dev`.
+Perbaikannya membutuhkan major upgrade/dependency shift, jadi mitigasi saat ini adalah menjaga dependency tetap up to date dan rutin monitor advisory.
