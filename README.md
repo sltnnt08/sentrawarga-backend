@@ -4,8 +4,9 @@
 [![Express](https://img.shields.io/badge/Express-5.x-000000?logo=express)](https://expressjs.com/)
 [![Prisma](https://img.shields.io/badge/Prisma-7.x-2D3748?logo=prisma)](https://www.prisma.io/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Required-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-Cloud%20DB-3FCF8E?logo=supabase&logoColor=white)](https://supabase.com/)
 
-Backend API untuk SentraWarga berbasis **Express + Prisma + PostgreSQL**.
+Backend API untuk SentraWarga berbasis **Express + Prisma + PostgreSQL (Supabase sebagai cloud database utama)**.
 Dokumen ini dibuat untuk dua audiens sekaligus:
 
 - Reviewer profesional yang butuh gambaran arsitektur, kualitas, dan deployment dengan cepat.
@@ -35,7 +36,7 @@ Dokumen ini dibuat untuk dua audiens sekaligus:
 ## 1) Prerequisites
 
 - Node.js 22 atau lebih baru.
-- PostgreSQL aktif dan bisa diakses dari `DATABASE_URL`.
+- Akses ke PostgreSQL. Rekomendasi project ini: pakai **Supabase Postgres** untuk environment cloud.
 - NPM (ikut bersama instalasi Node.js).
 
 ## 2) Quick Start (5 Menit)
@@ -57,6 +58,8 @@ Untuk PowerShell:
 ```powershell
 Copy-Item .env.example .env
 ```
+
+Untuk setup standar project ini, isi `DATABASE_URL` (Supabase pooler) dan `DIRECT_URL` (direct connection Supabase) di `.env`.
 
 3. Generate Prisma Client:
 
@@ -86,20 +89,21 @@ npm run dev
 
 Sumber konfigurasi ada di file `.env`.
 
-| Variable               | Required   | Keterangan                                      |
-| ---------------------- | ---------- | ----------------------------------------------- |
-| `NODE_ENV`             | Ya         | `development` \| `test` \| `production`         |
-| `PORT`                 | Ya         | Port HTTP server                                |
-| `DATABASE_URL`         | Ya         | Koneksi database utama                          |
-| `DIRECT_URL`           | Disarankan | Koneksi direct untuk Prisma migration           |
-| `CORS_ORIGIN`          | Ya         | Single origin atau allowlist dipisah koma       |
-| `JWT_SECRET`           | Ya         | Minimal 16 karakter                             |
-| `JWT_EXPIRES_IN`       | Ya         | Contoh: `1d`, `7d`                              |
-| `BODY_LIMIT`           | Ya         | Batas ukuran body request                       |
-| `RATE_LIMIT_WINDOW_MS` | Ya         | Window rate limit global                        |
-| `RATE_LIMIT_MAX`       | Ya         | Maksimum request per window                     |
-| `AUTH_RATE_LIMIT_MAX`  | Ya         | Maksimum request untuk endpoint auth            |
-| `TRUST_PROXY`          | Opsional   | Set `true` jika di belakang proxy/load balancer |
+| Variable               | Required   | Keterangan                                                  |
+| ---------------------- | ---------- | ----------------------------------------------------------- |
+| `NODE_ENV`             | Ya         | `development` \| `test` \| `production`                     |
+| `PORT`                 | Ya         | Port HTTP server                                            |
+| `DATABASE_URL`         | Ya         | Koneksi utama aplikasi (disarankan Supabase Session Pooler) |
+| `DIRECT_URL`           | Disarankan | Koneksi direct ke DB (dipakai Prisma untuk migration)       |
+| `LOCAL_DATABASE_URL`   | Opsional   | Fallback untuk local PostgreSQL/testing lokal               |
+| `CORS_ORIGIN`          | Ya         | Single origin atau allowlist dipisah koma                   |
+| `JWT_SECRET`           | Ya         | Minimal 16 karakter                                         |
+| `JWT_EXPIRES_IN`       | Ya         | Contoh: `1d`, `7d`                                          |
+| `BODY_LIMIT`           | Ya         | Batas ukuran body request                                   |
+| `RATE_LIMIT_WINDOW_MS` | Ya         | Window rate limit global                                    |
+| `RATE_LIMIT_MAX`       | Ya         | Maksimum request per window                                 |
+| `AUTH_RATE_LIMIT_MAX`  | Ya         | Maksimum request untuk endpoint auth                        |
+| `TRUST_PROXY`          | Opsional   | Set `true` jika di belakang proxy/load balancer             |
 
 ## 4) API Surface Ringkas
 
@@ -133,6 +137,7 @@ Dokumentasi detail endpoint tersedia di `openapi.yaml`.
 ### Migration
 
 - Prisma CLI pada project ini akan memakai `DIRECT_URL` jika tersedia, lalu fallback ke `DATABASE_URL`.
+- Untuk Supabase: gunakan URL direct (`db.<project-ref>.supabase.co`) pada `DIRECT_URL` agar migrate lebih stabil.
 
 - Deploy migration:
 
@@ -203,6 +208,12 @@ npm run build:render
 ```
 
 Deploy dipicu dari GitHub Actions workflow `Deploy to Render` di `.github/workflows/deploy.yml`.
+
+Catatan penting untuk Render + Supabase:
+
+- Render tidak butuh PostgreSQL internal jika `DATABASE_URL` dan `DIRECT_URL` sudah diarahkan ke Supabase.
+- Minimal set environment variable di Render: `DATABASE_URL`, `DIRECT_URL`, `JWT_SECRET`, `CORS_ORIGIN`, `NODE_ENV=production`.
+- Dengan konfigurasi ini, service Render tetap stateless dan database cloud tetap ditangani Supabase.
 
 ## 8) Security Notes
 
