@@ -1,5 +1,11 @@
+import { createClient } from '@supabase/supabase-js';
 import { login, register } from '../services/auth-service.js';
 import { asyncHandler } from '../utils/async-handler.js';
+
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+
+const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
 
 export const registerHandler = asyncHandler(async (req, res) => {
 	const result = await register(req.validated.body);
@@ -24,4 +30,24 @@ export const meHandler = asyncHandler(async (req, res) => {
 		success: true,
 		data: req.user,
 	});
+});
+
+export const callbackHandler = asyncHandler(async (req, res) => {
+	const { code } = req.query;
+
+	if (!code || typeof code !== 'string' || !supabase) {
+		return res.redirect('/login');
+	}
+
+	try {
+		const { error } = await supabase.auth.exchangeCodeForSession(code);
+
+		if (error) {
+			return res.redirect('/login');
+		}
+	} catch {
+		return res.redirect('/login');
+	}
+
+	return res.redirect('/dashboard');
 });

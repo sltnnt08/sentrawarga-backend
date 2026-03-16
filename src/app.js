@@ -6,6 +6,7 @@ import { errorHandler, notFoundHandler } from './middlewares/error-handler.js';
 import { requestContext } from './middlewares/request-context.js';
 import { requestLogger } from './middlewares/request-logger.js';
 import { apiRateLimiter, corsOriginAllowlist, securityHeaders } from './middlewares/security.js';
+import { authRoutes } from './routes/auth-routes.js';
 import { apiRoutes } from './routes/index.js';
 
 const app = express();
@@ -33,6 +34,7 @@ app.use(
 app.use(express.json({ limit: env.bodyLimit }));
 app.use(express.urlencoded({ extended: false, limit: env.bodyLimit }));
 app.use(apiRateLimiter);
+app.use('/auth', authRoutes);
 
 app.get('/', (req, res) => {
 	res.json({
