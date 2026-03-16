@@ -1,4 +1,4 @@
-import { VoteType } from '@prisma/client';
+import { VoteType } from '../constants/prisma-enums.js';
 import { z } from 'zod';
 
 const reportIdParams = z.object({

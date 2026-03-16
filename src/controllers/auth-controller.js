@@ -7,6 +7,12 @@ const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 
 const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
 
+let supabaseClient = supabase;
+
+export const setSupabaseClientForTest = (client) => {
+	supabaseClient = client;
+};
+
 export const registerHandler = asyncHandler(async (req, res) => {
 	const result = await register(req.validated.body);
 	res.status(201).json({
@@ -35,12 +41,12 @@ export const meHandler = asyncHandler(async (req, res) => {
 export const callbackHandler = asyncHandler(async (req, res) => {
 	const { code } = req.query;
 
-	if (!code || typeof code !== 'string' || !supabase) {
+	if (!code || typeof code !== 'string' || !supabaseClient) {
 		return res.redirect('/login');
 	}
 
 	try {
-		const { error } = await supabase.auth.exchangeCodeForSession(code);
+		const { error } = await supabaseClient.auth.exchangeCodeForSession(code);
 
 		if (error) {
 			return res.redirect('/login');

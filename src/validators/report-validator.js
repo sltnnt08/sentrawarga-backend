@@ -1,4 +1,4 @@
-import { Category, Priority, ReportStatus } from '@prisma/client';
+import { Category, Priority, ReportStatus } from '../constants/prisma-enums.js';
 import { z } from 'zod';
 
 const categoryEnum = z.nativeEnum(Category);

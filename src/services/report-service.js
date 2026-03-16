@@ -1,5 +1,5 @@
-import { NotificationType, ReportStatus } from '@prisma/client';
 import { createNotification } from './notification-service.js';
+import { NotificationType, ReportStatus } from '../constants/prisma-enums.js';
 import { prisma } from '../lib/prisma.js';
 import { HttpError } from '../utils/http-error.js';
 

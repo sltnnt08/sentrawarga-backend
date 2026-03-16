@@ -1,7 +1,6 @@
 import cors from 'cors';
 import express from 'express';
 import { env } from './config/env.js';
-import { prisma } from './lib/prisma.js';
 import { errorHandler, notFoundHandler } from './middlewares/error-handler.js';
 import { requestContext } from './middlewares/request-context.js';
 import { requestLogger } from './middlewares/request-logger.js';
@@ -54,6 +53,7 @@ app.get('/healthz', (req, res) => {
 
 app.get('/readyz', async (req, res, next) => {
 	try {
+		const { prisma } = await import('./lib/prisma.js');
 		await prisma.$queryRawUnsafe('SELECT 1');
 		res.json({
 			success: true,
