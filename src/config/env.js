@@ -28,7 +28,7 @@ const schema = z.object({
 	rateLimitMax: z.number().int().positive().default(200),
 	authRateLimitMax: z.number().int().positive().default(20),
 	trustProxy: z.boolean().default(false),
-	geminiApiKey: z.string().min(1),
+	geminiApiKey: z.string().min(1).optional().default(''),
 });
 
 const rawEnv = {

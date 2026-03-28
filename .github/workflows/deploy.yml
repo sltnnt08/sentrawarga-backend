@@ -9,19 +9,27 @@ jobs:
     runs-on: ubuntu-latest
     env:
       NODE_ENV: test
+      PORT: 3000
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres?schema=public
-      JWT_SECRET: test-jwt-secret-12345
+      CORS_ORIGIN: http://localhost:3000
+      JWT_SECRET: test-jwt-secret-12345-for-testing
+      JWT_EXPIRES_IN: 1d
+      BODY_LIMIT: 1mb
+      RATE_LIMIT_WINDOW_MS: 900000
+      RATE_LIMIT_MAX: 200
+      AUTH_RATE_LIMIT_MAX: 20
+      GEMINI_API_KEY: test-api-key-for-testing
     steps:
       - uses: actions/checkout@v6
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Generate Prisma Client
         run: npx prisma generate
