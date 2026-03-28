@@ -29,6 +29,7 @@
 	},
 	"homepage": "https://github.com/sltnnt08/sentrawarga-backend#readme",
 	"dependencies": {
+		"@google/generative-ai": "^0.24.1",
 		"@prisma/adapter-pg": "^7.4.2",
 		"@prisma/client": "^7.5.0",
 		"@supabase/supabase-js": "^2.99.1",
@@ -50,6 +51,7 @@
 		"newman": "^6.2.2",
 		"nodemon": "^3.1.14",
 		"prisma": "^7.5.0",
+		"supabase": "^2.84.4",
 		"supertest": "^7.2.2",
 		"tsx": "^4.21.0"
 	}

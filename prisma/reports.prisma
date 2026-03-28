@@ -1,19 +1,22 @@
 model Report {
-  id           String        @id @default(uuid())
-  title        String
-  description  String
-  priority     Priority
-  resolvedAt   DateTime?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  reporterId   String
-  status       ReportStatus
-  category     Category[]
-  address      String?
-  longitude    Float?
-  latitude     Float?
-  comments     Comment[]
-  reporter     User          @relation(fields: [reporterId], references: [id])
-  reportImages ReportImage[]
-  votes        Vote[]
+    id           String        @id @default(uuid())
+    title        String
+    description  String
+    priority     Priority
+    resolvedAt   DateTime?
+    createdAt    DateTime      @default(now())
+    updatedAt    DateTime      @updatedAt
+    reporterId   String
+    status       ReportStatus
+    category     Category[]
+    address      String?
+    longitude    Float?
+    latitude     Float?
+    aiCategory   Category?
+    aiConfidence Float?
+    aiSpamFlag   Boolean?
+    comments     Comment[]
+    reporter     User          @relation(fields: [reporterId], references: [id])
+    reportImages ReportImage[]
+    votes        Vote[]
 }

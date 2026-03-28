@@ -28,6 +28,7 @@ const schema = z.object({
 	rateLimitMax: z.number().int().positive().default(200),
 	authRateLimitMax: z.number().int().positive().default(20),
 	trustProxy: z.boolean().default(false),
+	geminiApiKey: z.string().min(1),
 });
 
 const rawEnv = {
@@ -42,6 +43,7 @@ const rawEnv = {
 	rateLimitMax: toInt(process.env.RATE_LIMIT_MAX, 200),
 	authRateLimitMax: toInt(process.env.AUTH_RATE_LIMIT_MAX, 20),
 	trustProxy: toBoolean(process.env.TRUST_PROXY, false),
+	geminiApiKey: process.env.GEMINI_API_KEY,
 };
 
 const parsedEnv = schema.parse(rawEnv);

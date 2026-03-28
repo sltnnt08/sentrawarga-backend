@@ -14,6 +14,8 @@ export const createReportSchema = z.object({
 		latitude: z.number().optional(),
 		longitude: z.number().optional(),
 		address: z.string().max(255).optional(),
+		imageBase64: z.string().optional(),
+		imageMimeType: z.string().default('image/jpeg').optional(),
 	}),
 	query: z.object({}).optional(),
 	params: z.object({}).optional(),

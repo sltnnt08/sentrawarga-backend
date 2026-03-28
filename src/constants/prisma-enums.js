@@ -18,6 +18,7 @@ export const Category = {
 	ROADS_ISSUE: 'ROADS_ISSUE',
 	PUBLIC_DISTURBANCE: 'PUBLIC_DISTURBANCE',
 	ACCIDENTS: 'ACCIDENTS',
+    OTHERS: 'OTHERS',
 };
 
 export const ReportStatus = {

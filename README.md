@@ -29,9 +29,10 @@ Dokumen ini dibuat untuk dua audiens sekaligus:
 - [4) API Surface Ringkas](#4-api-surface-ringkas)
 - [5) Database Migration dan RLS](#5-database-migration-dan-rls)
 - [6) Testing dan Quality Gate](#6-testing-dan-quality-gate)
-- [7) Deployment](#7-deployment)
-- [8) Security Notes](#8-security-notes)
-- [9) Referensi Project](#9-referensi-project)
+- [7) Fitur Klasifikasi AI Laporan](#7-fitur-klasifikasi-ai-laporan)
+- [8) Deployment](#8-deployment)
+- [9) Security Notes](#9-security-notes)
+- [10) Referensi Project](#10-referensi-project)
 
 ## 1) Prerequisites
 
@@ -104,6 +105,7 @@ Sumber konfigurasi ada di file `.env`.
 | `RATE_LIMIT_MAX`       | Ya         | Maksimum request per window                                 |
 | `AUTH_RATE_LIMIT_MAX`  | Ya         | Maksimum request untuk endpoint auth                        |
 | `TRUST_PROXY`          | Opsional   | Set `true` jika di belakang proxy/load balancer             |
+| `GEMINI_API_KEY`       | Opsional   | API key Gemini untuk fitur klasifikasi otomatis laporan     |
 
 ## 4) API Surface Ringkas
 
@@ -171,6 +173,29 @@ npm run test:postman
 npm run test:all
 ```
 
+**Test dengan Fitur Klasifikasi AI:**
+
+Suite test mencakup 18 test cases meliputi:
+
+- **AI Service Integration (8 tests)** - validasi service klasifikasi laporan
+  - Fallback behavior saat API gagal
+  - Validasi kategori terhadap enum yang tersedia
+  - Validasi confidence score (0.0-1.0)
+  - Konsistensi struktur response
+  - Handling image opsional
+
+- **Report API Integration (10 tests)** - validasi endpoint laporan dengan AI
+  - Pembuatan laporan dengan field AI classification
+  - Inclusion AI fields dalam response
+  - Graceful fallback saat API gagal
+  - Berbagai panjang deskripsi
+  - Validasi field types dan values
+
+Test detail tersedia di:
+
+- `test/ai-integration.test.js` - AI service tests
+- `test/app.test.js` - API integration tests
+
 ### Lint
 
 ```bash
@@ -190,7 +215,137 @@ Workflow aktif ada di `.github/workflows/deploy.yml`:
 - Job `test`: checkout, setup Node.js, install dependency, generate Prisma Client, lalu `npm test`
 - Job `deploy`: trigger deploy ke Render via `RENDER_DEPLOY_HOOK` (jalan setelah job `test` sukses)
 
-## 7) Deployment
+## 7) Fitur Klasifikasi AI Laporan
+
+Aplikasi terintegrasi dengan Google Gemini API (gemini-2.5-flash-lite) untuk klasifikasi otomatis laporan.
+
+### Fitur Utama
+
+- **Klasifikasi Multi-modal**: Menerima deskripsi teks dan gambar base64 dalam satu API call
+- **Input Fleksibel**: Gambar opsional, fokus pada deskripsi teks sebagai primary input
+- **Validasi Kategori**: Memvalidasi response terhadap enum kategori aktual (CRIMINAL, TRASH, FLOOD, POLLUTION, ROADS_ISSUE, PUBLIC_DISTURBANCE, ACCIDENTS, OTHERS)
+- **Confidence Scoring**: Menghasilkan nilai confidence 0.0-1.0
+- **Spam Detection**: Flag boolean untuk deteksi laporan spam
+- **Graceful Degradation**: Laporan tetap tersimpan meskipun AI API gagal (fallback dengan nilai null/false)
+
+### Konfigurasi
+
+Sebelum production, pastikan:
+
+1. Set `GEMINI_API_KEY` di file `.env` (diperoleh dari [Google AI Studio](https://aistudio.google.com/))
+2. Verifikasi database migration sudah applied: `npm run migrate`
+3. Test dengan sample laporan termasuk image
+4. Monitor usage dan rate limits API (quota: 10 requests/menit di free tier)
+
+### Implementasi Teknis
+
+#### File yang Diubah
+
+1. **src/config/env.js** - Validasi GEMINI_API_KEY dengan Zod
+2. **src/services/ai-service.js** - Service klasifikasi laporan
+   - Fungsi: `klasifikasiLaporan(options)`
+   - Parameter: `deskripsi` (required), `fotoBase64` (optional), `mimeType` (default: 'image/jpeg')
+   - Return: Object dengan `category`, `confidenceScore`, `isSpam`, `aiError`
+3. **src/services/report-service.js** - Integrasi AI saat membuat laporan
+4. **src/validators/report-validator.js** - Field baru: `imageBase64`, `imageMimeType`
+5. **prisma/reports.prisma** - Tiga field baru di model Report:
+   - `aiCategory`: Category (nullable) - kategori prediksi AI
+   - `aiConfidence`: Float (nullable) - confidence score (0.0-1.0)
+   - `aiSpamFlag`: Boolean (nullable) - flag spam detection
+6. **Migration**: `prisma/migrations/20260328082221_add_ai_classification_fields`
+
+#### Response Fallback (saat API gagal)
+
+```javascript
+{
+  category: null,
+  confidenceScore: null,
+  isSpam: false,
+  aiError: true
+}
+```
+
+### Contoh API Usage
+
+```bash
+POST /api/reports
+Content-Type: application/json
+Authorization: Bearer <token>
+
+{
+  "title": "Sampah Menumpuk",
+  "description": "Terdapat sampah plastik yang sangat banyak menumpuk di samping toko elektronik menyebabkan polusi visual dan lingkungan",
+  "category": ["TRASH"],
+  "priority": "HIGH",
+  "address": "Jl. Merdeka No. 123, Jakarta",
+  "latitude": -6.2088,
+  "longitude": 106.8456,
+  "imageBase64": "base64-encoded-image-data",
+  "imageMimeType": "image/jpeg"
+}
+```
+
+Response mencakup field AI classification:
+
+```json
+{
+  "success": true,
+  "message": "Report created",
+  "data": {
+    "id": "uuid",
+    "title": "Sampah Menumpuk",
+    "description": "...",
+    "category": ["TRASH"],
+    "aiCategory": "TRASH",
+    "aiConfidence": 0.95,
+    "aiSpamFlag": false,
+    "status": "PENDING",
+    ...
+  }
+}
+```
+
+### Security
+
+✅ **API Key Protection**
+
+- GEMINI_API_KEY hanya digunakan server-side di ai-service.js
+- Tidak pernah exposed di API response atau frontend
+- Divalidasi melalui env.js sebelum digunakan
+
+✅ **Error Handling**
+
+- Error handler mencegah API failure memblokir laporan creation
+- Error messages logged ke console untuk debugging
+- Tidak ada sensitive info yang bocor di error response
+
+✅ **Input Validation**
+
+- Deskripsi laporan: 10-3000 karakter
+- Image base64: optional
+- MIME type: validated/defaulted
+- Kategori response: validated terhadap enum
+
+### Database Behavior
+
+Saat laporan dibuat:
+
+1. AI service dipanggil dengan deskripsi + image (opsional)
+2. Jika sukses: tiga field AI terisi dengan nilai
+3. Jika gagal: tiga field AI di-set ke null/false, laporan tetap tersimpan
+4. Semua laporan queryable dengan AI fields included di response
+
+### Pattern Kode yang Diikuti
+
+✅ ES6 modules (import/export)  
+✅ Async/await error handling  
+✅ Service layer architecture  
+✅ Validator + service + controller pattern  
+✅ Prisma ORM untuk database operations  
+✅ Zod untuk environment validation  
+✅ Naming convention existing (fungsi bahasa Indonesia di service layer)
+
+## 8) Deployment
 
 ### 1) Docker
 
@@ -215,7 +370,7 @@ Catatan penting untuk Render + Supabase:
 - Minimal set environment variable di Render: `DATABASE_URL`, `DIRECT_URL`, `JWT_SECRET`, `CORS_ORIGIN`, `NODE_ENV=production`.
 - Dengan konfigurasi ini, service Render tetap stateless dan database cloud tetap ditangani Supabase.
 
-## 8) Security Notes
+## 9) Security Notes
 
 - Helmet untuk security headers.
 - Rate limiting global dan rate limiting khusus auth endpoint.
@@ -223,7 +378,7 @@ Catatan penting untuk Render + Supabase:
 - Error response menyertakan `requestId` untuk traceability.
 - Pada production, detail error internal dimasking menjadi pesan generik.
 
-## 9) Referensi Project
+## 10) Referensi Project
 
 - OpenAPI spec: `openapi.yaml`
 - Prisma schema: `prisma/schema.prisma` (+ file split schema lainnya di folder `prisma`)
