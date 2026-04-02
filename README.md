@@ -119,7 +119,8 @@ Sumber konfigurasi ada di file `.env`.
 Catatan SMTP SendPulse:
 
 - Kombinasi umum yang aman: `465 + secure=true`, `2525 + secure=false`, `587 + secure=false`.
-- Jika `SENDPULSE_SMTP_USER/PASS/FROM_EMAIL` kosong, backend akan fallback ke mode log (email tidak benar-benar dikirim).
+- Jika `SENDPULSE_SMTP_USER/PASS/FROM_EMAIL` kosong, backend hanya fallback ke mode log pada `development`/`test` (email tidak benar-benar dikirim).
+- Pada `production`, konfigurasi SMTP yang tidak lengkap akan dianggap error agar tidak terjadi status sukses palsu.
 - Untuk verifikasi cepat SMTP, jalankan `npm run test:sendpulse` setelah mengisi `SENDPULSE_TEST_TO`.
 
 ## 4) API Surface Ringkas

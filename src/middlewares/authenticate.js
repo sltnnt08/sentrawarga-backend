@@ -13,16 +13,27 @@ export const authenticate = async (req, res, next) => {
 		const payload = verifyAccessToken(token);
 		const user = await prisma.user.findUnique({
 			where: { id: payload.sub },
-			select: { id: true, name: true, email: true, role: true },
+			select: { id: true, name: true, email: true, role: true, emailVerified: true },
 		});
 
 		if (!user) {
 			throw new HttpError(401, 'Invalid access token');
 		}
 
+		if (!user.emailVerified) {
+			throw new HttpError(403, 'Email belum diverifikasi. Akses ditolak.', {
+				code: 'EMAIL_NOT_VERIFIED',
+				email: user.email,
+			});
+		}
+
 		req.user = user;
 		next();
-	} catch {
+	} catch (error) {
+		if (error instanceof HttpError) {
+			return next(error);
+		}
+
 		next(new HttpError(401, 'Unauthorized'));
 	}
 };

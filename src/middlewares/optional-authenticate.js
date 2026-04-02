@@ -12,10 +12,10 @@ export const optionalAuthenticate = async (req, res, next) => {
 		const payload = verifyAccessToken(token);
 		const user = await prisma.user.findUnique({
 			where: { id: payload.sub },
-			select: { id: true, name: true, email: true, role: true },
+			select: { id: true, name: true, email: true, role: true, emailVerified: true },
 		});
 
-		if (!user) {
+		if (!user || !user.emailVerified) {
 			return next();
 		}
 

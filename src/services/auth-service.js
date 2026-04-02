@@ -4,7 +4,7 @@ import { env } from '../config/env.js';
 import { prisma } from '../lib/prisma.js';
 import { HttpError } from '../utils/http-error.js';
 import { signAccessToken } from '../utils/jwt.js';
-import { generateToken } from '../utils/token.js';
+import { generateOtp, generateToken } from '../utils/token.js';
 import { sendVerificationEmail, sendPasswordResetEmail } from './email-service.js';
 
 const googleClient = env.googleClientId ? new OAuth2Client(env.googleClientId) : null;
@@ -69,6 +69,23 @@ const sanitizeUser = (user) => ({
 });
 
 const normalizeEmail = (email) => String(email ?? '').trim().toLowerCase();
+const verificationTokenTtlMs = 24 * 60 * 60 * 1000;
+
+const generateUniqueVerificationCode = async (maxAttempts = 8) => {
+	for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+		const code = generateOtp();
+		const existing = await prisma.user.findUnique({
+			where: { emailVerificationToken: code },
+			select: { id: true },
+		});
+
+		if (!existing) {
+			return code;
+		}
+	}
+
+	throw new HttpError(503, 'Gagal membuat kode verifikasi. Silakan coba lagi.');
+};
 
 export const register = async ({ name, email, password, address }) => {
 	const normalizedEmail = normalizeEmail(email);
@@ -78,7 +95,7 @@ export const register = async ({ name, email, password, address }) => {
 	}
 
 	const passwordHash = await bcrypt.hash(password, 10);
-	const verificationToken = generateToken();
+	const verificationToken = await generateUniqueVerificationCode();
 
 	const user = await prisma.user.create({
 		data: {
@@ -87,7 +104,7 @@ export const register = async ({ name, email, password, address }) => {
 			password: passwordHash,
 			address,
 			emailVerificationToken: verificationToken,
-			emailVerificationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 jam
+			emailVerificationExpires: new Date(Date.now() + verificationTokenTtlMs),
 		},
 	});
 
@@ -213,6 +230,7 @@ export const loginOrRegisterWithGoogle = async ({ idToken }) => {
 
 export const verifyEmail = async ({ email, token }) => {
 	const normalizedEmail = normalizeEmail(email);
+	const normalizedToken = String(token ?? '').trim();
 	const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
 	if (!user) {
 		throw new HttpError(404, 'User not found');
@@ -222,7 +240,7 @@ export const verifyEmail = async ({ email, token }) => {
 		throw new HttpError(400, 'Email already verified');
 	}
 
-	if (user.emailVerificationToken !== token) {
+	if (user.emailVerificationToken !== normalizedToken) {
 		throw new HttpError(400, 'Invalid verification token');
 	}
 
@@ -259,17 +277,22 @@ export const resendVerificationEmail = async ({ email }) => {
 	}
 
 	// Generate new token
-	const verificationToken = generateToken();
+	const verificationToken = await generateUniqueVerificationCode();
 	await prisma.user.update({
 		where: { email: normalizedEmail },
 		data: {
 			emailVerificationToken: verificationToken,
-			emailVerificationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
+			emailVerificationExpires: new Date(Date.now() + verificationTokenTtlMs),
 		},
 	});
 
 	// Send email
-	await sendVerificationEmail(normalizedEmail, verificationToken);
+	try {
+		await sendVerificationEmail(normalizedEmail, verificationToken);
+	} catch (error) {
+		console.error('Failed to resend verification email:', error);
+		throw new HttpError(503, 'Gagal mengirim email verifikasi. Silakan coba lagi beberapa saat lagi.');
+	}
 
 	return {
 		message: 'Verification email sent',

@@ -3,6 +3,11 @@ import nodemailer from 'nodemailer';
 
 let transporter;
 
+const hasSmtpConfig = () =>
+  Boolean(env.sendpulseSmtpUser && env.sendpulseSmtpPass && env.sendpulseFromEmail);
+
+const isLocalDevMode = () => env.nodeEnv === 'development' || env.nodeEnv === 'test';
+
 const getTransporter = () => {
   if (transporter) {
     return transporter;
@@ -26,14 +31,20 @@ const getTransporter = () => {
  * Untuk development tanpa konfigurasi SMTP, log ke console
  */
 export const sendEmail = async ({ to, subject, html, text }) => {
-  if (!env.sendpulseSmtpUser || !env.sendpulseSmtpPass || !env.sendpulseFromEmail) {
-		// Development mode - log to console
-		console.log('📧 [Email] Development Mode');
-		console.log(`To: ${to}`);
-		console.log(`Subject: ${subject}`);
-		console.log(`\n${text || html}\n`);
-		return { success: true, isDev: true };
-	}
+  if (!hasSmtpConfig()) {
+    if (!isLocalDevMode()) {
+      throw new Error(
+        'SendPulse SMTP belum dikonfigurasi lengkap di server (SENDPULSE_SMTP_USER, SENDPULSE_SMTP_PASS, SENDPULSE_FROM_EMAIL).',
+      );
+    }
+
+    // Development mode - log to console
+    console.log('📧 [Email] Development Mode');
+    console.log(`To: ${to}`);
+    console.log(`Subject: ${subject}`);
+    console.log(`\n${text || html}\n`);
+    return { success: true, isDev: true };
+  }
 
 	try {
     const info = await getTransporter().sendMail({
@@ -61,7 +72,7 @@ export const sendEmail = async ({ to, subject, html, text }) => {
  * Send email verifikasi
  */
 export const sendVerificationEmail = async (email, token) => {
-	const verificationUrl = `${env.appBaseUrl}/verifikasi-email?email=${encodeURIComponent(email)}&token=${token}`;
+  const verificationUrl = `${env.appBaseUrl}/verifikasi-email?email=${encodeURIComponent(email)}`;
 
 	const html = `
     <!DOCTYPE html>
@@ -73,9 +84,8 @@ export const sendVerificationEmail = async (email, token) => {
         .container { max-width: 600px; margin: 0 auto; padding: 20px; }
         .header { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 20px; border-radius: 8px; }
         .content { padding: 20px; background: #f9fafb; }
-        .button { display: inline-block; background: #10b981; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
         .footer { color: #6b7280; font-size: 12px; margin-top: 20px; }
-        .code { font-family: monospace; background: #e5e7eb; padding: 10px 14px; border-radius: 6px; display: inline-block; word-break: break-all; }
+        .code { font-family: monospace; letter-spacing: 6px; font-size: 24px; font-weight: 700; background: #e5e7eb; padding: 10px 14px; border-radius: 6px; display: inline-block; }
       </style>
     </head>
     <body>
@@ -85,12 +95,10 @@ export const sendVerificationEmail = async (email, token) => {
         </div>
         <div class="content">
           <p>Halo,</p>
-          <p>Terima kasih telah mendaftar di <strong>SentraWarga</strong>! Silakan klik tombol di bawah untuk memverifikasi email Anda.</p>
-          <a href="${verificationUrl}" class="button">Verifikasi Email</a>
-          <p>Kode verifikasi Anda:</p>
+          <p>Terima kasih telah mendaftar di <strong>SentraWarga</strong>. Masukkan kode verifikasi berikut di aplikasi:</p>
           <p class="code">${token}</p>
-          <p>Atau salin tautan ini: <a href="${verificationUrl}">${verificationUrl}</a></p>
-          <p>Link verifikasi berlaku selama 24 jam.</p>
+          <p>Kode verifikasi berlaku selama 24 jam.</p>
+          <p>Halaman verifikasi: <a href="${verificationUrl}">${verificationUrl}</a></p>
           <p>Jika Anda tidak membuat akun ini, abaikan email ini.</p>
         </div>
         <div class="footer">
@@ -105,7 +113,7 @@ export const sendVerificationEmail = async (email, token) => {
 		to: email,
 		subject: 'Verifikasi Email - SentraWarga',
 		html,
-    text: `Kode verifikasi: ${token}\nSilakan klik tautan ini untuk memverifikasi email: ${verificationUrl}`,
+    text: `Kode verifikasi SentraWarga: ${token}\nMasukkan kode ini di halaman verifikasi: ${verificationUrl}`,
 	});
 };
 

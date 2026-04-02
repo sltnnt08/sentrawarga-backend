@@ -27,11 +27,11 @@ test('sendVerificationEmail includes verification code and link for user', async
 		assert.equal(result.success, true);
 
 		const combinedLogs = logs.join('\n');
-		const expectedUrl = `${env.appBaseUrl}/verifikasi-email?email=${encodeURIComponent(email)}&token=${token}`;
+		const expectedUrl = `${env.appBaseUrl}/verifikasi-email?email=${encodeURIComponent(email)}`;
 
 		assert.match(combinedLogs, /To: user@example.com/);
 		assert.match(combinedLogs, /Verifikasi Email - SentraWarga/);
-		assert.match(combinedLogs, /Kode verifikasi: verify-token-123/);
+		assert.match(combinedLogs, /Kode verifikasi SentraWarga: verify-token-123/);
 		assert.match(combinedLogs, new RegExp(expectedUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
 	} finally {
 		env.sendpulseSmtpUser = originalSmtpUser;

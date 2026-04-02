@@ -31,7 +31,7 @@ export const googleAuthSchema = z.object({
 export const verifyEmailSchema = z.object({
 	body: z.object({
 		email: z.string().email().max(120),
-		token: z.string().min(1),
+		token: z.string().regex(/^\d{6}$/, 'Verification code must be 6 digits'),
 	}),
 	query: z.object({}).optional(),
 	params: z.object({}).optional(),
