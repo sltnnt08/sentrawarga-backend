@@ -28,6 +28,19 @@ const isTransientDbError = (error) => {
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+const isLegacyGoogleSchemaError = (error) => {
+	if (String(error?.code ?? '').toUpperCase() !== 'P2022') {
+		return false;
+	}
+
+	const message = String(error?.message ?? '');
+	return (
+		message.includes('`emailVerified`') ||
+		message.includes('`emailVerificationToken`') ||
+		message.includes('`emailVerificationExpires`')
+	);
+};
+
 const withDbRetry = async (operation, maxAttempts = 3) => {
 	for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
 		try {
@@ -134,22 +147,46 @@ export const loginOrRegisterWithGoogle = async ({ idToken }) => {
 	const name = payload.name?.trim() || email.split('@')[0] || 'Pengguna Google';
 	const randomPasswordHash = await bcrypt.hash(generateToken(24), 10);
 
-	const user = await withDbRetry(() =>
-		prisma.user.upsert({
-			where: { email },
-			create: {
-				name,
-				email,
-				password: randomPasswordHash,
-				emailVerified: true,
-			},
-			update: {
-				emailVerified: true,
-				emailVerificationToken: null,
-				emailVerificationExpires: null,
-			},
-		}),
-	);
+	let user;
+
+	try {
+		user = await withDbRetry(() =>
+			prisma.user.upsert({
+				where: { email },
+				create: {
+					name,
+					email,
+					password: randomPasswordHash,
+					emailVerified: true,
+				},
+				update: {
+					emailVerified: true,
+					emailVerificationToken: null,
+					emailVerificationExpires: null,
+				},
+			}),
+		);
+	} catch (error) {
+		if (!isLegacyGoogleSchemaError(error)) {
+			throw error;
+		}
+
+		// Backward compatibility for deployments with older user table schema.
+		user = await withDbRetry(async () => {
+			const existingUser = await prisma.user.findUnique({ where: { email } });
+			if (existingUser) {
+				return existingUser;
+			}
+
+			return prisma.user.create({
+				data: {
+					name,
+					email,
+					password: randomPasswordHash,
+				},
+			});
+		});
+	}
 
 	const accessToken = signAccessToken({ sub: user.id, role: user.role });
 	return {
