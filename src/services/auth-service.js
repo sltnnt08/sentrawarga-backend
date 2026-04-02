@@ -9,6 +9,41 @@ import { sendVerificationEmail, sendPasswordResetEmail } from './email-service.j
 
 const googleClient = env.googleClientId ? new OAuth2Client(env.googleClientId) : null;
 
+const transientDbCodes = new Set(['ETIMEDOUT', 'ECONNRESET', 'ECONNREFUSED', 'P1001', 'P1002']);
+
+const isTransientDbError = (error) => {
+	const code = String(error?.code ?? '').toUpperCase();
+	const message = String(error?.message ?? '').toUpperCase();
+
+	if (transientDbCodes.has(code)) {
+		return true;
+	}
+
+	return (
+		message.includes('ETIMEDOUT') ||
+		message.includes("CAN'T REACH DATABASE SERVER") ||
+		(message.includes('CONNECTION') && message.includes('TIMEOUT'))
+	);
+};
+
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const withDbRetry = async (operation, maxAttempts = 3) => {
+	for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+		try {
+			return await operation();
+		} catch (error) {
+			if (!isTransientDbError(error) || attempt === maxAttempts) {
+				throw error;
+			}
+
+			await wait(attempt * 200);
+		}
+	}
+
+	throw new HttpError(503, 'Database is temporarily unavailable');
+};
+
 const sanitizeUser = (user) => ({
 	id: user.id,
 	name: user.name,
@@ -97,29 +132,24 @@ export const loginOrRegisterWithGoogle = async ({ idToken }) => {
 	}
 
 	const name = payload.name?.trim() || email.split('@')[0] || 'Pengguna Google';
+	const randomPasswordHash = await bcrypt.hash(generateToken(24), 10);
 
-	let user = await prisma.user.findUnique({ where: { email } });
-
-	if (!user) {
-		const randomPasswordHash = await bcrypt.hash(generateToken(24), 10);
-		user = await prisma.user.create({
-			data: {
+	const user = await withDbRetry(() =>
+		prisma.user.upsert({
+			where: { email },
+			create: {
 				name,
 				email,
 				password: randomPasswordHash,
 				emailVerified: true,
 			},
-		});
-	} else if (!user.emailVerified) {
-		user = await prisma.user.update({
-			where: { email },
-			data: {
+			update: {
 				emailVerified: true,
 				emailVerificationToken: null,
 				emailVerificationExpires: null,
 			},
-		});
-	}
+		}),
+	);
 
 	const accessToken = signAccessToken({ sub: user.id, role: user.role });
 	return {

@@ -1,5 +1,22 @@
 import { env } from '../config/env.js';
 
+const transientDbCodes = new Set(['ETIMEDOUT', 'ECONNRESET', 'ECONNREFUSED', 'P1001', 'P1002']);
+
+const isTransientDbError = (error) => {
+	const code = String(error?.code ?? '').toUpperCase();
+	const message = String(error?.message ?? '').toUpperCase();
+
+	if (transientDbCodes.has(code)) {
+		return true;
+	}
+
+	return (
+		message.includes('ETIMEDOUT') ||
+		message.includes("CAN'T REACH DATABASE SERVER") ||
+		(message.includes('CONNECTION') && message.includes('TIMEOUT'))
+	);
+};
+
 const buildErrorLogPayload = (error, req, statusCode) => ({
 	level: statusCode >= 500 ? 'error' : 'warn',
 	time: new Date().toISOString(),
@@ -27,9 +44,14 @@ export const errorHandler = (error, req, res, next) => {
 		return next(error);
 	}
 
-	const statusCode = error.statusCode ?? 500;
+	const statusCode = error.statusCode ?? (isTransientDbError(error) ? 503 : 500);
 	const isServerError = statusCode >= 500;
-	const message = isServerError && env.nodeEnv === 'production' ? 'Internal server error' : error.message;
+	const message =
+		statusCode === 503
+			? 'Database is temporarily unavailable, please try again'
+			: isServerError && env.nodeEnv === 'production'
+				? 'Internal server error'
+				: error.message;
 
 	console.error(JSON.stringify(buildErrorLogPayload(error, req, statusCode)));
 
