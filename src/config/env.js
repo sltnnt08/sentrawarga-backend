@@ -19,7 +19,10 @@ const toBoolean = (value, fallback = false) => {
 const schema = z.object({
 	nodeEnv: z.enum(['development', 'test', 'production']).default('development'),
 	port: z.number().int().positive().default(3000),
-	corsOrigin: z.string().min(1).default('http://localhost:5173'),
+	corsOrigin: z
+		.string()
+		.min(1)
+		.default('http://localhost:5173,https://sentrawarga.my.id,https://www.sentrawarga.my.id'),
 	databaseUrl: z.string().min(1),
 	jwtSecret: z.string().min(16),
 	jwtExpiresIn: z.string().min(1).default('1d'),

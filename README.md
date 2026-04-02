@@ -370,6 +370,8 @@ Catatan penting untuk Render + Supabase:
 
 - Render tidak butuh PostgreSQL internal jika `DATABASE_URL` dan `DIRECT_URL` sudah diarahkan ke Supabase.
 - Minimal set environment variable di Render: `DATABASE_URL`, `DIRECT_URL`, `JWT_SECRET`, `CORS_ORIGIN`, `NODE_ENV=production`.
+- Contoh nilai `CORS_ORIGIN` produksi: `https://sentrawarga.my.id,https://www.sentrawarga.my.id`.
+- Set `APP_BASE_URL=https://sentrawarga.my.id` untuk link verifikasi email dan reset password.
 - Dengan konfigurasi ini, service Render tetap stateless dan database cloud tetap ditangani Supabase.
 
 ## 9) Security Notes
