@@ -1,11 +1,32 @@
 import { env } from '../config/env.js';
+import nodemailer from 'nodemailer';
+
+let transporter;
+
+const getTransporter = () => {
+  if (transporter) {
+    return transporter;
+  }
+
+  transporter = nodemailer.createTransport({
+    host: env.sendpulseSmtpHost,
+    port: env.sendpulseSmtpPort,
+    secure: env.sendpulseSmtpSecure,
+    auth: {
+      user: env.sendpulseSmtpUser,
+      pass: env.sendpulseSmtpPass,
+    },
+  });
+
+  return transporter;
+};
 
 /**
- * Send email menggunakan Resend API
- * Untuk development tanpa API key, log ke console
+ * Send email menggunakan SendPulse SMTP
+ * Untuk development tanpa konfigurasi SMTP, log ke console
  */
 export const sendEmail = async ({ to, subject, html, text }) => {
-	if (!env.resendApiKey) {
+  if (!env.sendpulseSmtpUser || !env.sendpulseSmtpPass || !env.sendpulseFromEmail) {
 		// Development mode - log to console
 		console.log('📧 [Email] Development Mode');
 		console.log(`To: ${to}`);
@@ -15,29 +36,21 @@ export const sendEmail = async ({ to, subject, html, text }) => {
 	}
 
 	try {
-		const response = await fetch('https://api.resend.com/emails', {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				Authorization: `Bearer ${env.resendApiKey}`,
-			},
-			body: JSON.stringify({
-				from: 'noreply@sentrawarga.com',
-				to,
-				subject,
-				html: html || text,
-			}),
-		});
+    const info = await getTransporter().sendMail({
+      from: env.sendpulseFromEmail,
+      to,
+      subject,
+      text,
+      html,
+      replyTo: env.sendpulseReplyTo || undefined,
+    });
 
-		if (!response.ok) {
-			const error = await response.json();
-			console.error('Email send error:', error);
-			throw new Error(`Email send failed: ${error.message}`);
+    if (!info?.messageId) {
+      throw new Error('Email send failed: messageId is missing');
 		}
 
-		const data = await response.json();
-		console.log(`✅ Email sent to ${to}`, { id: data.id });
-		return { success: true, id: data.id };
+    console.log(`✅ Email sent to ${to}`, { messageId: info.messageId });
+    return { success: true, id: info.messageId };
 	} catch (error) {
 		console.error('Error sending email:', error);
 		throw error;

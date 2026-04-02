@@ -84,7 +84,7 @@ export const verifyEmail = async ({ email, token }) => {
 		throw new HttpError(400, 'Invalid verification token');
 	}
 
-	if (new Date() > user.emailVerificationExpires) {
+	if (!user.emailVerificationExpires || new Date() > user.emailVerificationExpires) {
 		throw new HttpError(400, 'Verification token expired');
 	}
 
@@ -171,7 +171,7 @@ export const resetPassword = async ({ email, token, newPassword }) => {
 		throw new HttpError(400, 'Invalid reset token');
 	}
 
-	if (new Date() > user.resetPasswordExpires) {
+	if (!user.resetPasswordExpires || new Date() > user.resetPasswordExpires) {
 		throw new HttpError(400, 'Reset token expired');
 	}
 
