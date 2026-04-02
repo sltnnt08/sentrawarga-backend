@@ -22,6 +22,7 @@ export const isCorsOriginAllowed = (origin) => {
 
 export const securityHeaders = helmet({
 	crossOriginResourcePolicy: false,
+	crossOriginOpenerPolicy: false,
 });
 
 export const apiRateLimiter = rateLimit({
