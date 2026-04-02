@@ -4,7 +4,7 @@ import { env } from './config/env.js';
 import { errorHandler, notFoundHandler } from './middlewares/error-handler.js';
 import { requestContext } from './middlewares/request-context.js';
 import { requestLogger } from './middlewares/request-logger.js';
-import { apiRateLimiter, corsOriginAllowlist, securityHeaders } from './middlewares/security.js';
+import { apiRateLimiter, isCorsOriginAllowed, securityHeaders } from './middlewares/security.js';
 import { authRoutes } from './routes/auth-routes.js';
 import { apiRoutes } from './routes/index.js';
 
@@ -22,7 +22,7 @@ app.use(securityHeaders);
 app.use(
 	cors({
 		origin: (origin, callback) => {
-			if (!origin || corsOriginAllowlist.includes(origin)) {
+			if (isCorsOriginAllowed(origin)) {
 				return callback(null, true);
 			}
 

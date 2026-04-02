@@ -75,8 +75,8 @@ export const login = async ({ email, password }) => {
 };
 
 export const loginOrRegisterWithGoogle = async ({ idToken }) => {
-	if (!googleClient || !env.googleClientId) {
-		throw new HttpError(500, 'Google auth not configured');
+	if (!googleClient || !env.googleClientId || !env.googleClientId.includes('.apps.googleusercontent.com')) {
+		throw new HttpError(400, 'Google auth belum dikonfigurasi dengan benar di server');
 	}
 
 	let payload;
