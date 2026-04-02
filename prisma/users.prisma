@@ -1,14 +1,19 @@
 model User {
-  id            String         @id @default(uuid())
-  name          String
-  email         String         @unique
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  password      String
-  role          Role           @default(USER)
-  address       String?
-  comments      Comment[]
-  notifications Notification[]
-  reports       Report[]
-  votes         Vote[]
+  id                        String         @id @default(uuid())
+  name                      String
+  email                     String         @unique
+  password                  String
+  createdAt                 DateTime       @default(now())
+  updatedAt                 DateTime       @updatedAt
+  role                      Role           @default(USER)
+  address                   String?
+  emailVerified             Boolean        @default(false)
+  emailVerificationToken    String?        @unique
+  emailVerificationExpires  DateTime?
+  resetPasswordToken        String?        @unique
+  resetPasswordExpires      DateTime?
+  comments                  Comment[]
+  notifications             Notification[]
+  reports                   Report[]
+  votes                     Vote[]
 }

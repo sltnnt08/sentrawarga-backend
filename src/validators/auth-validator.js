@@ -19,3 +19,38 @@ export const loginSchema = z.object({
 	query: z.object({}).optional(),
 	params: z.object({}).optional(),
 });
+
+export const verifyEmailSchema = z.object({
+	body: z.object({
+		email: z.string().email().max(120),
+		token: z.string().min(1),
+	}),
+	query: z.object({}).optional(),
+	params: z.object({}).optional(),
+});
+
+export const resendVerificationEmailSchema = z.object({
+	body: z.object({
+		email: z.string().email().max(120),
+	}),
+	query: z.object({}).optional(),
+	params: z.object({}).optional(),
+});
+
+export const forgotPasswordSchema = z.object({
+	body: z.object({
+		email: z.string().email().max(120),
+	}),
+	query: z.object({}).optional(),
+	params: z.object({}).optional(),
+});
+
+export const resetPasswordSchema = z.object({
+	body: z.object({
+		email: z.string().email().max(120),
+		token: z.string().min(1),
+		newPassword: z.string().min(8).max(100),
+	}),
+	query: z.object({}).optional(),
+	params: z.object({}).optional(),
+});

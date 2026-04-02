@@ -29,6 +29,11 @@ const schema = z.object({
 	authRateLimitMax: z.number().int().positive().default(20),
 	trustProxy: z.boolean().default(false),
 	geminiApiKey: z.string().min(1).optional().default(''),
+	resendApiKey: z.string().min(1).optional().default(''),
+	googleClientId: z.string().min(1).optional().default(''),
+	googleClientSecret: z.string().min(1).optional().default(''),
+	googleCallbackUrl: z.string().min(1).optional().default(''),
+	appBaseUrl: z.string().min(1).default('http://localhost:5173'),
 });
 
 const rawEnv = {
@@ -44,6 +49,11 @@ const rawEnv = {
 	authRateLimitMax: toInt(process.env.AUTH_RATE_LIMIT_MAX, 20),
 	trustProxy: toBoolean(process.env.TRUST_PROXY, false),
 	geminiApiKey: process.env.GEMINI_API_KEY,
+	resendApiKey: process.env.RESEND_API_KEY,
+	googleClientId: process.env.GOOGLE_CLIENT_ID,
+	googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
+	googleCallbackUrl: process.env.GOOGLE_CALLBACK_URL,
+	appBaseUrl: process.env.APP_BASE_URL,
 };
 
 const parsedEnv = schema.parse(rawEnv);

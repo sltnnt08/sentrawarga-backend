@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { login, register } from '../services/auth-service.js';
+import { login, register, verifyEmail, resendVerificationEmail, forgotPassword, resetPassword } from '../services/auth-service.js';
 import { asyncHandler } from '../utils/async-handler.js';
 
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -17,7 +17,7 @@ export const registerHandler = asyncHandler(async (req, res) => {
 	const result = await register(req.validated.body);
 	res.status(201).json({
 		success: true,
-		message: 'Register success',
+		message: result.message || 'Register success',
 		data: result,
 	});
 });
@@ -27,6 +27,40 @@ export const loginHandler = asyncHandler(async (req, res) => {
 	res.json({
 		success: true,
 		message: 'Login success',
+		data: result,
+	});
+});
+
+export const verifyEmailHandler = asyncHandler(async (req, res) => {
+	const result = await verifyEmail(req.validated.body);
+	res.json({
+		success: true,
+		message: result.message,
+		data: result,
+	});
+});
+
+export const resendVerificationEmailHandler = asyncHandler(async (req, res) => {
+	const result = await resendVerificationEmail(req.validated.body);
+	res.json({
+		success: true,
+		message: result.message,
+	});
+});
+
+export const forgotPasswordHandler = asyncHandler(async (req, res) => {
+	const result = await forgotPassword(req.validated.body);
+	res.json({
+		success: true,
+		message: result.message,
+	});
+});
+
+export const resetPasswordHandler = asyncHandler(async (req, res) => {
+	const result = await resetPassword(req.validated.body);
+	res.json({
+		success: true,
+		message: result.message,
 		data: result,
 	});
 });
