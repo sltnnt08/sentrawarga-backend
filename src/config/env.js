@@ -46,6 +46,12 @@ const schema = z.object({
 	appBaseUrl: z.string().min(1).default('http://localhost:5173'),
 });
 
+const resolvedSendpulseSmtpPort = toInt(process.env.SENDPULSE_SMTP_PORT, 465);
+const resolvedSendpulseSmtpSecure = toBoolean(
+	process.env.SENDPULSE_SMTP_SECURE,
+	resolvedSendpulseSmtpPort === 465,
+);
+
 const rawEnv = {
 	nodeEnv: process.env.NODE_ENV,
 	port: toInt(process.env.PORT, 3000),
@@ -60,8 +66,8 @@ const rawEnv = {
 	trustProxy: toBoolean(process.env.TRUST_PROXY, false),
 	geminiApiKey: process.env.GEMINI_API_KEY,
 	sendpulseSmtpHost: process.env.SENDPULSE_SMTP_HOST,
-	sendpulseSmtpPort: toInt(process.env.SENDPULSE_SMTP_PORT, 465),
-	sendpulseSmtpSecure: toBoolean(process.env.SENDPULSE_SMTP_SECURE, true),
+	sendpulseSmtpPort: resolvedSendpulseSmtpPort,
+	sendpulseSmtpSecure: resolvedSendpulseSmtpSecure,
 	sendpulseSmtpUser: process.env.SENDPULSE_SMTP_USER,
 	sendpulseSmtpPass: process.env.SENDPULSE_SMTP_PASS,
 	sendpulseFromEmail: process.env.SENDPULSE_FROM_EMAIL,

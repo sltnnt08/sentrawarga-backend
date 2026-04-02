@@ -3,7 +3,10 @@ import nodemailer from 'nodemailer';
 
 const host = process.env.SENDPULSE_SMTP_HOST || 'smtp-pulse.com';
 const port = Number.parseInt(process.env.SENDPULSE_SMTP_PORT || '465', 10);
-const secure = String(process.env.SENDPULSE_SMTP_SECURE || 'true').toLowerCase() === 'true';
+const hasSecureOverride = process.env.SENDPULSE_SMTP_SECURE != null && process.env.SENDPULSE_SMTP_SECURE !== '';
+const secure = hasSecureOverride
+	? String(process.env.SENDPULSE_SMTP_SECURE).toLowerCase() === 'true'
+	: port === 465;
 const user = process.env.SENDPULSE_SMTP_USER;
 const pass = process.env.SENDPULSE_SMTP_PASS;
 const from = process.env.SENDPULSE_FROM_EMAIL;
@@ -26,6 +29,23 @@ const transporter = nodemailer.createTransport({
 });
 
 const run = async () => {
+	if (port !== 465 && secure) {
+		console.warn(
+			'[Warn] SMTP config looks unusual: secure=true with port not 465. For port 2525/587 set SENDPULSE_SMTP_SECURE=false.',
+		);
+	}
+
+	console.log('Testing SendPulse SMTP connection with config:', {
+		host,
+		port,
+		secure,
+		from,
+		to,
+	});
+
+	await transporter.verify();
+	console.log('SMTP connection verified. Sending test email...');
+
 	const info = await transporter.sendMail({
 		from,
 		to,

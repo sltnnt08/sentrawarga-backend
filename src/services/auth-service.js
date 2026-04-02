@@ -68,8 +68,11 @@ const sanitizeUser = (user) => ({
 	updatedAt: user.updatedAt,
 });
 
+const normalizeEmail = (email) => String(email ?? '').trim().toLowerCase();
+
 export const register = async ({ name, email, password, address }) => {
-	const existingUser = await prisma.user.findUnique({ where: { email } });
+	const normalizedEmail = normalizeEmail(email);
+	const existingUser = await prisma.user.findUnique({ where: { email: normalizedEmail } });
 	if (existingUser) {
 		throw new HttpError(409, 'Email already registered');
 	}
@@ -80,7 +83,7 @@ export const register = async ({ name, email, password, address }) => {
 	const user = await prisma.user.create({
 		data: {
 			name,
-			email,
+			email: normalizedEmail,
 			password: passwordHash,
 			address,
 			emailVerificationToken: verificationToken,
@@ -89,23 +92,29 @@ export const register = async ({ name, email, password, address }) => {
 	});
 
 	// Send verification email
+	let verificationEmailSent = true;
 	try {
-		await sendVerificationEmail(email, verificationToken);
+		await sendVerificationEmail(normalizedEmail, verificationToken);
 	} catch (error) {
+		verificationEmailSent = false;
 		console.error('Failed to send verification email:', error);
 		// Jangan gagalkan register jika email gagal, tapi log error
 	}
 
-	const accessToken = signAccessToken({ sub: user.id, role: user.role });
 	return {
-		accessToken,
 		user: sanitizeUser(user),
-		message: 'Silakan verifikasi email Anda',
+		email: user.email,
+		emailVerificationRequired: true,
+		verificationEmailSent,
+		message: verificationEmailSent
+			? 'Silakan verifikasi email Anda'
+			: 'Akun berhasil dibuat, tetapi email verifikasi gagal dikirim. Silakan kirim ulang email verifikasi.',
 	};
 };
 
 export const login = async ({ email, password }) => {
-	const user = await prisma.user.findUnique({ where: { email } });
+	const normalizedEmail = normalizeEmail(email);
+	const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
 	if (!user) {
 		throw new HttpError(401, 'Invalid email or password');
 	}
@@ -113,6 +122,13 @@ export const login = async ({ email, password }) => {
 	const isPasswordValid = await bcrypt.compare(password, user.password);
 	if (!isPasswordValid) {
 		throw new HttpError(401, 'Invalid email or password');
+	}
+
+	if (!user.emailVerified) {
+		throw new HttpError(403, 'Email belum diverifikasi. Silakan verifikasi email terlebih dahulu.', {
+			code: 'EMAIL_NOT_VERIFIED',
+			email: user.email,
+		});
 	}
 
 	const accessToken = signAccessToken({ sub: user.id, role: user.role });
@@ -196,7 +212,8 @@ export const loginOrRegisterWithGoogle = async ({ idToken }) => {
 };
 
 export const verifyEmail = async ({ email, token }) => {
-	const user = await prisma.user.findUnique({ where: { email } });
+	const normalizedEmail = normalizeEmail(email);
+	const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
 	if (!user) {
 		throw new HttpError(404, 'User not found');
 	}
@@ -214,7 +231,7 @@ export const verifyEmail = async ({ email, token }) => {
 	}
 
 	const updatedUser = await prisma.user.update({
-		where: { email },
+		where: { email: normalizedEmail },
 		data: {
 			emailVerified: true,
 			emailVerificationToken: null,
@@ -231,7 +248,8 @@ export const verifyEmail = async ({ email, token }) => {
 };
 
 export const resendVerificationEmail = async ({ email }) => {
-	const user = await prisma.user.findUnique({ where: { email } });
+	const normalizedEmail = normalizeEmail(email);
+	const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
 	if (!user) {
 		throw new HttpError(404, 'User not found');
 	}
@@ -243,7 +261,7 @@ export const resendVerificationEmail = async ({ email }) => {
 	// Generate new token
 	const verificationToken = generateToken();
 	await prisma.user.update({
-		where: { email },
+		where: { email: normalizedEmail },
 		data: {
 			emailVerificationToken: verificationToken,
 			emailVerificationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
@@ -251,7 +269,7 @@ export const resendVerificationEmail = async ({ email }) => {
 	});
 
 	// Send email
-	await sendVerificationEmail(email, verificationToken);
+	await sendVerificationEmail(normalizedEmail, verificationToken);
 
 	return {
 		message: 'Verification email sent',
@@ -259,7 +277,8 @@ export const resendVerificationEmail = async ({ email }) => {
 };
 
 export const forgotPassword = async ({ email }) => {
-	const user = await prisma.user.findUnique({ where: { email } });
+	const normalizedEmail = normalizeEmail(email);
+	const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
 	if (!user) {
 		// Jangan reveal apakah email terdaftar atau tidak (security best practice)
 		return { message: 'If email exists, reset link will be sent' };
@@ -267,7 +286,7 @@ export const forgotPassword = async ({ email }) => {
 
 	const resetToken = generateToken();
 	await prisma.user.update({
-		where: { email },
+		where: { email: normalizedEmail },
 		data: {
 			resetPasswordToken: resetToken,
 			resetPasswordExpires: new Date(Date.now() + 60 * 60 * 1000), // 1 jam
@@ -276,7 +295,7 @@ export const forgotPassword = async ({ email }) => {
 
 	// Send reset email
 	try {
-		await sendPasswordResetEmail(email, resetToken);
+		await sendPasswordResetEmail(normalizedEmail, resetToken);
 	} catch (error) {
 		console.error('Failed to send reset password email:', error);
 	}
@@ -287,7 +306,8 @@ export const forgotPassword = async ({ email }) => {
 };
 
 export const resetPassword = async ({ email, token, newPassword }) => {
-	const user = await prisma.user.findUnique({ where: { email } });
+	const normalizedEmail = normalizeEmail(email);
+	const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
 	if (!user) {
 		throw new HttpError(404, 'User not found');
 	}
@@ -302,7 +322,7 @@ export const resetPassword = async ({ email, token, newPassword }) => {
 
 	const passwordHash = await bcrypt.hash(newPassword, 10);
 	const updatedUser = await prisma.user.update({
-		where: { email },
+		where: { email: normalizedEmail },
 		data: {
 			password: passwordHash,
 			resetPasswordToken: null,

@@ -75,7 +75,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthSuccessResponse'
+                $ref: '#/components/schemas/RegisterSuccessResponse'
         '400':
           $ref: '#/components/responses/ValidationError'
         '409':
@@ -104,6 +104,8 @@ paths:
           $ref: '#/components/responses/ValidationError'
         '401':
           $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -572,7 +574,7 @@ components:
 
     User:
       type: object
-      required: [id, name, email, role, createdAt, updatedAt]
+      required: [id, name, email, role, emailVerified, createdAt, updatedAt]
       properties:
         id:
           type: string
@@ -590,6 +592,8 @@ components:
           maxLength: 255
         role:
           $ref: '#/components/schemas/Role'
+        emailVerified:
+          type: boolean
         createdAt:
           type: string
           format: date-time
@@ -649,6 +653,25 @@ components:
         user:
           $ref: '#/components/schemas/User'
 
+    RegisterPayload:
+      type: object
+      required: [user, email, emailVerificationRequired, verificationEmailSent, message]
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        email:
+          type: string
+          format: email
+        emailVerificationRequired:
+          type: boolean
+          example: true
+        verificationEmailSent:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Silakan verifikasi email Anda
+
     AuthSuccessResponse:
       type: object
       required: [success, message, data]
@@ -661,6 +684,19 @@ components:
           example: Login success
         data:
           $ref: '#/components/schemas/AuthPayload'
+
+    RegisterSuccessResponse:
+      type: object
+      required: [success, message, data]
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Silakan verifikasi email Anda
+        data:
+          $ref: '#/components/schemas/RegisterPayload'
 
     Report:
       type: object

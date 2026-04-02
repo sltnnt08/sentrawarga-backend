@@ -105,8 +105,22 @@ Sumber konfigurasi ada di file `.env`.
 | `RATE_LIMIT_MAX`       | Ya         | Maksimum request per window                                 |
 | `AUTH_RATE_LIMIT_MAX`  | Ya         | Maksimum request untuk endpoint auth                        |
 | `TRUST_PROXY`          | Opsional   | Set `true` jika di belakang proxy/load balancer             |
+| `SENDPULSE_SMTP_HOST`  | Opsional   | Host SMTP SendPulse (default: `smtp-pulse.com`)             |
+| `SENDPULSE_SMTP_PORT`  | Opsional   | Port SMTP (umum: `465`, `2525`, `587`)                      |
+| `SENDPULSE_SMTP_SECURE`| Opsional   | `true` untuk SSL langsung (`465`), selain itu `false`       |
+| `SENDPULSE_SMTP_USER`  | Opsional   | Username SMTP SendPulse                                      |
+| `SENDPULSE_SMTP_PASS`  | Opsional   | Password SMTP SendPulse                                      |
+| `SENDPULSE_FROM_EMAIL` | Opsional   | Sender email (contoh: `no-reply@domain.com`)                |
+| `SENDPULSE_REPLY_TO`   | Opsional   | Alamat balasan email                                         |
+| `SENDPULSE_TEST_TO`    | Opsional   | Tujuan email untuk `npm run test:sendpulse`                 |
 | `GOOGLE_CLIENT_ID`     | Opsional   | Wajib diisi jika ingin mengaktifkan login/daftar Google     |
 | `GEMINI_API_KEY`       | Opsional   | API key Gemini untuk fitur klasifikasi otomatis laporan     |
+
+Catatan SMTP SendPulse:
+
+- Kombinasi umum yang aman: `465 + secure=true`, `2525 + secure=false`, `587 + secure=false`.
+- Jika `SENDPULSE_SMTP_USER/PASS/FROM_EMAIL` kosong, backend akan fallback ke mode log (email tidak benar-benar dikirim).
+- Untuk verifikasi cepat SMTP, jalankan `npm run test:sendpulse` setelah mengisi `SENDPULSE_TEST_TO`.
 
 ## 4) API Surface Ringkas
 
