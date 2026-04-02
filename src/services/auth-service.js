@@ -344,7 +344,7 @@ export const resetPassword = async ({ email, token, newPassword }) => {
 	}
 
 	const passwordHash = await bcrypt.hash(newPassword, 10);
-	const updatedUser = await prisma.user.update({
+	await prisma.user.update({
 		where: { email: normalizedEmail },
 		data: {
 			password: passwordHash,
@@ -352,11 +352,7 @@ export const resetPassword = async ({ email, token, newPassword }) => {
 			resetPasswordExpires: null,
 		},
 	});
-
-	const accessToken = signAccessToken({ sub: updatedUser.id, role: updatedUser.role });
 	return {
-		accessToken,
-		user: sanitizeUser(updatedUser),
 		message: 'Password reset successful',
 	};
 };
