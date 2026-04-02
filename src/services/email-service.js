@@ -75,6 +75,7 @@ export const sendVerificationEmail = async (email, token) => {
         .content { padding: 20px; background: #f9fafb; }
         .button { display: inline-block; background: #10b981; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
         .footer { color: #6b7280; font-size: 12px; margin-top: 20px; }
+        .code { font-family: monospace; background: #e5e7eb; padding: 10px 14px; border-radius: 6px; display: inline-block; word-break: break-all; }
       </style>
     </head>
     <body>
@@ -86,6 +87,8 @@ export const sendVerificationEmail = async (email, token) => {
           <p>Halo,</p>
           <p>Terima kasih telah mendaftar di <strong>SentraWarga</strong>! Silakan klik tombol di bawah untuk memverifikasi email Anda.</p>
           <a href="${verificationUrl}" class="button">Verifikasi Email</a>
+          <p>Kode verifikasi Anda:</p>
+          <p class="code">${token}</p>
           <p>Atau salin tautan ini: <a href="${verificationUrl}">${verificationUrl}</a></p>
           <p>Link verifikasi berlaku selama 24 jam.</p>
           <p>Jika Anda tidak membuat akun ini, abaikan email ini.</p>
@@ -102,7 +105,7 @@ export const sendVerificationEmail = async (email, token) => {
 		to: email,
 		subject: 'Verifikasi Email - SentraWarga',
 		html,
-		text: `Silakan klik tautan ini untuk memverifikasi email: ${verificationUrl}`,
+    text: `Kode verifikasi: ${token}\nSilakan klik tautan ini untuk memverifikasi email: ${verificationUrl}`,
 	});
 };
 

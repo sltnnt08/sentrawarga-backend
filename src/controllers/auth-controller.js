@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { login, register, verifyEmail, resendVerificationEmail, forgotPassword, resetPassword } from '../services/auth-service.js';
+import { login, register, verifyEmail, resendVerificationEmail, forgotPassword, resetPassword, loginOrRegisterWithGoogle } from '../services/auth-service.js';
 import { asyncHandler } from '../utils/async-handler.js';
 
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -27,6 +27,15 @@ export const loginHandler = asyncHandler(async (req, res) => {
 	res.json({
 		success: true,
 		message: 'Login success',
+		data: result,
+	});
+});
+
+export const googleAuthHandler = asyncHandler(async (req, res) => {
+	const result = await loginOrRegisterWithGoogle(req.validated.body);
+	res.json({
+		success: true,
+		message: 'Google auth success',
 		data: result,
 	});
 });

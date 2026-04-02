@@ -105,6 +105,7 @@ Sumber konfigurasi ada di file `.env`.
 | `RATE_LIMIT_MAX`       | Ya         | Maksimum request per window                                 |
 | `AUTH_RATE_LIMIT_MAX`  | Ya         | Maksimum request untuk endpoint auth                        |
 | `TRUST_PROXY`          | Opsional   | Set `true` jika di belakang proxy/load balancer             |
+| `GOOGLE_CLIENT_ID`     | Opsional   | Wajib diisi jika ingin mengaktifkan login/daftar Google     |
 | `GEMINI_API_KEY`       | Opsional   | API key Gemini untuk fitur klasifikasi otomatis laporan     |
 
 ## 4) API Surface Ringkas
@@ -114,6 +115,7 @@ Base path API: `/api`
 - Auth:
   - `POST /api/auth/register`
   - `POST /api/auth/login`
+  - `POST /api/auth/google`
   - `GET /api/auth/me` (auth required)
 - Reports:
   - `GET /api/reports`

@@ -1,9 +1,13 @@
 import bcrypt from 'bcryptjs';
+import { OAuth2Client } from 'google-auth-library';
+import { env } from '../config/env.js';
 import { prisma } from '../lib/prisma.js';
 import { HttpError } from '../utils/http-error.js';
 import { signAccessToken } from '../utils/jwt.js';
 import { generateToken } from '../utils/token.js';
 import { sendVerificationEmail, sendPasswordResetEmail } from './email-service.js';
+
+const googleClient = env.googleClientId ? new OAuth2Client(env.googleClientId) : null;
 
 const sanitizeUser = (user) => ({
 	id: user.id,
@@ -61,6 +65,60 @@ export const login = async ({ email, password }) => {
 	const isPasswordValid = await bcrypt.compare(password, user.password);
 	if (!isPasswordValid) {
 		throw new HttpError(401, 'Invalid email or password');
+	}
+
+	const accessToken = signAccessToken({ sub: user.id, role: user.role });
+	return {
+		accessToken,
+		user: sanitizeUser(user),
+	};
+};
+
+export const loginOrRegisterWithGoogle = async ({ idToken }) => {
+	if (!googleClient || !env.googleClientId) {
+		throw new HttpError(500, 'Google auth not configured');
+	}
+
+	let payload;
+
+	try {
+		const ticket = await googleClient.verifyIdToken({
+			idToken,
+			audience: env.googleClientId,
+		});
+		payload = ticket.getPayload();
+	} catch {
+		throw new HttpError(401, 'Invalid Google token');
+	}
+
+	const email = payload?.email?.trim().toLowerCase();
+	if (!email || payload?.email_verified !== true) {
+		throw new HttpError(401, 'Google account email is not verified');
+	}
+
+	const name = payload.name?.trim() || email.split('@')[0] || 'Pengguna Google';
+
+	let user = await prisma.user.findUnique({ where: { email } });
+
+	if (!user) {
+		const randomPasswordHash = await bcrypt.hash(generateToken(24), 10);
+		user = await prisma.user.create({
+			data: {
+				name,
+				email,
+				password: randomPasswordHash,
+				emailVerified: true,
+			},
+		});
+	} else if (!user.emailVerified) {
+		user = await prisma.user.update({
+			where: { email },
+			data: {
+				emailVerified: true,
+				emailVerificationToken: null,
+				emailVerificationExpires: null,
+			},
+		});
 	}
 
 	const accessToken = signAccessToken({ sub: user.id, role: user.role });

@@ -20,6 +20,14 @@ export const loginSchema = z.object({
 	params: z.object({}).optional(),
 });
 
+export const googleAuthSchema = z.object({
+	body: z.object({
+		idToken: z.string().min(1),
+	}),
+	query: z.object({}).optional(),
+	params: z.object({}).optional(),
+});
+
 export const verifyEmailSchema = z.object({
 	body: z.object({
 		email: z.string().email().max(120),
