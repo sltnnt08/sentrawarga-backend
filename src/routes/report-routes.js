@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import {
+	classifyReportHandler,
 	createReportHandler,
 	getReportStatsHandler,
 	getReportDetailHandler,
@@ -16,6 +17,7 @@ import { reportImageUpload } from '../middlewares/report-upload.js';
 import { validate } from '../middlewares/validate.js';
 import { createCommentSchema, listCommentsSchema } from '../validators/comment-validator.js';
 import {
+	classifyReportSchema,
 	createReportSchema,
 	listReportsSchema,
 	reportIdParamSchema,
@@ -27,6 +29,7 @@ const reportRoutes = Router();
 
 reportRoutes.get('/', validate(listReportsSchema), listReportsHandler);
 reportRoutes.get('/stats', getReportStatsHandler);
+reportRoutes.post('/classify', authenticate, validate(classifyReportSchema), classifyReportHandler);
 reportRoutes.post('/', authenticate, reportImageUpload, normalizeCreateReportPayload, validate(createReportSchema), createReportHandler);
 reportRoutes.get('/:id', validate(reportIdParamSchema), getReportDetailHandler);
 reportRoutes.patch(

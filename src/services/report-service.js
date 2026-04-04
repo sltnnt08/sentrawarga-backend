@@ -4,13 +4,24 @@ import { NotificationType, ReportStatus } from '../constants/prisma-enums.js';
 import { prisma } from '../lib/prisma.js';
 import { HttpError } from '../utils/http-error.js';
 
-export const createReport = async (reporterId, payload) => {
-	// Call AI service to classify the report
+export const classifyReportPayload = async (payload) => {
 	const aiResult = await klasifikasiLaporan({
 		deskripsi: payload.description,
 		fotoBase64: payload.imageBase64,
 		mimeType: payload.imageMimeType || 'image/jpeg',
 	});
+
+	return {
+		category: aiResult.category,
+		confidenceScore: aiResult.confidenceScore,
+		isSpam: aiResult.isSpam,
+		aiError: aiResult.aiError,
+	};
+};
+
+export const createReport = async (reporterId, payload) => {
+	// Call AI service to classify the report
+	const aiResult = await classifyReportPayload(payload);
 
 	const report = await prisma.report.create({
 		data: {

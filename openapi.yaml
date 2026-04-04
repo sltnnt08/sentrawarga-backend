@@ -183,6 +183,32 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /api/reports/classify:
+    post:
+      tags: [Reports]
+      summary: Classify report category with AI
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassifyReportRequest'
+      responses:
+        '200':
+          description: Classification result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassifyReportResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /api/reports/{id}:
     get:
       tags: [Reports]
@@ -907,6 +933,48 @@ components:
           type: string
           format: binary
           description: Optional image file (jpg, jpeg, png, webp, heic, heif) maksimum 5MB.
+
+    ClassifyReportRequest:
+      type: object
+      required: [description]
+      properties:
+        description:
+          type: string
+          minLength: 10
+          maxLength: 3000
+        imageBase64:
+          type: string
+        imageMimeType:
+          type: string
+          default: image/jpeg
+
+    ClassifyReportPayload:
+      type: object
+      required: [category, confidenceScore, isSpam, aiError]
+      properties:
+        category:
+          anyOf:
+            - $ref: '#/components/schemas/Category'
+            - type: 'null'
+        confidenceScore:
+          type:
+            - number
+            - 'null'
+          minimum: 0
+          maximum: 1
+        isSpam:
+          type: boolean
+        aiError:
+          type: boolean
+
+    ClassifyReportResponse:
+      type: object
+      required: [success, data]
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/ClassifyReportPayload'
 
     UpdateReportStatusRequest:
       type: object

@@ -1,5 +1,20 @@
-import { createReport, getReportById, getReportStats, listReports, updateReportStatus } from '../services/report-service.js';
+import {
+	classifyReportPayload,
+	createReport,
+	getReportById,
+	getReportStats,
+	listReports,
+	updateReportStatus,
+} from '../services/report-service.js';
 import { asyncHandler } from '../utils/async-handler.js';
+
+export const classifyReportHandler = asyncHandler(async (req, res) => {
+	const result = await classifyReportPayload(req.validated.body);
+	res.json({
+		success: true,
+		data: result,
+	});
+});
 
 export const createReportHandler = asyncHandler(async (req, res) => {
 	const report = await createReport(req.user.id, req.validated.body);

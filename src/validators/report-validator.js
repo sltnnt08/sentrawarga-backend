@@ -21,6 +21,16 @@ export const createReportSchema = z.object({
 	params: z.object({}).optional(),
 });
 
+export const classifyReportSchema = z.object({
+	body: z.object({
+		description: z.string().min(10).max(3000),
+		imageBase64: z.string().optional(),
+		imageMimeType: z.string().default('image/jpeg').optional(),
+	}),
+	query: z.object({}).optional(),
+	params: z.object({}).optional(),
+});
+
 export const listReportsSchema = z.object({
 	body: z.object({}).optional(),
 	query: z.object({
