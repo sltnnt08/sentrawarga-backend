@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
 	createReportHandler,
+	getReportStatsHandler,
 	getReportDetailHandler,
 	listReportsHandler,
 	updateReportStatusHandler,
@@ -25,6 +26,7 @@ import { voteParamsSchema, voteSummarySchema, voteUpsertSchema } from '../valida
 const reportRoutes = Router();
 
 reportRoutes.get('/', validate(listReportsSchema), listReportsHandler);
+reportRoutes.get('/stats', getReportStatsHandler);
 reportRoutes.post('/', authenticate, reportImageUpload, normalizeCreateReportPayload, validate(createReportSchema), createReportHandler);
 reportRoutes.get('/:id', validate(reportIdParamSchema), getReportDetailHandler);
 reportRoutes.patch(

@@ -1,4 +1,4 @@
-import { createReport, getReportById, listReports, updateReportStatus } from '../services/report-service.js';
+import { createReport, getReportById, getReportStats, listReports, updateReportStatus } from '../services/report-service.js';
 import { asyncHandler } from '../utils/async-handler.js';
 
 export const createReportHandler = asyncHandler(async (req, res) => {
@@ -12,6 +12,15 @@ export const createReportHandler = asyncHandler(async (req, res) => {
 
 export const listReportsHandler = asyncHandler(async (req, res) => {
 	const result = await listReports(req.validated.query);
+	res.json({
+		success: true,
+		data: result,
+	});
+});
+
+export const getReportStatsHandler = asyncHandler(async (req, res) => {
+	void req;
+	const result = await getReportStats();
 	res.json({
 		success: true,
 		data: result,

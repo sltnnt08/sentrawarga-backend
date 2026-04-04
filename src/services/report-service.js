@@ -78,6 +78,46 @@ export const listReports = async ({ status, priority, category, page = 1, limit 
 	};
 };
 
+export const getReportStats = async () => {
+	const grouped = await prisma.report.groupBy({
+		by: ['status'],
+		_count: {
+			_all: true,
+		},
+	});
+
+	const statusCounts = grouped.reduce(
+		(acc, row) => ({
+			...acc,
+			[row.status]: row._count._all,
+		}),
+		{},
+	);
+
+	const pending = statusCounts[ReportStatus.PENDING] ?? 0;
+	const verified = statusCounts[ReportStatus.VERIFIED] ?? 0;
+	const inProgress = statusCounts[ReportStatus.IN_PROGRESS] ?? 0;
+	const resolved = statusCounts[ReportStatus.RESOLVED] ?? 0;
+
+	return {
+		totalCreated:
+			pending +
+			verified +
+			inProgress +
+			resolved +
+			(statusCounts[ReportStatus.REJECTED] ?? 0),
+		inProgress: pending + verified + inProgress,
+		totalResolved: resolved,
+		statusBreakdown: {
+			PENDING: pending,
+			VERIFIED: verified,
+			IN_PROGRESS: inProgress,
+			RESOLVED: resolved,
+			REJECTED: statusCounts[ReportStatus.REJECTED] ?? 0,
+		},
+	};
+};
+
 export const getReportById = async (reportId) => {
 	const report = await prisma.report.findUnique({
 		where: { id: reportId },
