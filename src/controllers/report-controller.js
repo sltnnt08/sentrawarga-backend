@@ -4,6 +4,7 @@ import {
 	getReportById,
 	getReportStats,
 	listReports,
+	updateReport,
 	updateReportStatus,
 } from '../services/report-service.js';
 import { asyncHandler } from '../utils/async-handler.js';
@@ -55,6 +56,15 @@ export const updateReportStatusHandler = asyncHandler(async (req, res) => {
 	res.json({
 		success: true,
 		message: 'Report status updated',
+		data: report,
+	});
+});
+
+export const updateReportHandler = asyncHandler(async (req, res) => {
+	const report = await updateReport(req.validated.params.id, req.user, req.validated.body);
+	res.json({
+		success: true,
+		message: 'Report updated',
 		data: report,
 	});
 });

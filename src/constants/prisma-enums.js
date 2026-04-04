@@ -27,6 +27,7 @@ export const ReportStatus = {
 	IN_PROGRESS: 'IN_PROGRESS',
 	RESOLVED: 'RESOLVED',
 	REJECTED: 'REJECTED',
+	CANCELLED: 'CANCELLED',
 };
 
 export const VoteType = {

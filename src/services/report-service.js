@@ -6,6 +6,30 @@ import { prisma } from '../lib/prisma.js';
 import { HttpError } from '../utils/http-error.js';
 import { randomUUID } from 'node:crypto';
 
+const STATUS_LABEL_ID = {
+	[ReportStatus.PENDING]: 'Menunggu Verifikasi',
+	[ReportStatus.VERIFIED]: 'Terverifikasi',
+	[ReportStatus.IN_PROGRESS]: 'Sedang Ditangani',
+	[ReportStatus.RESOLVED]: 'Selesai',
+	[ReportStatus.REJECTED]: 'Ditolak',
+	[ReportStatus.CANCELLED]: 'Dibatalkan',
+};
+
+const FINAL_STATUSES = new Set([
+	ReportStatus.RESOLVED,
+	ReportStatus.REJECTED,
+	ReportStatus.CANCELLED,
+]);
+
+const buildStatusChangeMessage = ({ status, actorRole, reportTitle }) => {
+	if (status === ReportStatus.CANCELLED) {
+		const cancelledBy = actorRole === 'ADMIN' ? 'admin' : 'pengguna';
+		return `Laporan "${reportTitle}" dibatalkan oleh ${cancelledBy}.`;
+	}
+
+	return `Laporan "${reportTitle}" sekarang berstatus ${STATUS_LABEL_ID[status] ?? status}.`;
+};
+
 export const classifyReportPayload = async (payload) => {
 	const aiResult = await klasifikasiLaporan({
 		judul: payload.title,
@@ -139,6 +163,7 @@ export const getReportStats = async () => {
 	const verified = statusCounts[ReportStatus.VERIFIED] ?? 0;
 	const inProgress = statusCounts[ReportStatus.IN_PROGRESS] ?? 0;
 	const resolved = statusCounts[ReportStatus.RESOLVED] ?? 0;
+	const cancelled = statusCounts[ReportStatus.CANCELLED] ?? 0;
 
 	return {
 		totalCreated:
@@ -146,7 +171,8 @@ export const getReportStats = async () => {
 			verified +
 			inProgress +
 			resolved +
-			(statusCounts[ReportStatus.REJECTED] ?? 0),
+			(statusCounts[ReportStatus.REJECTED] ?? 0) +
+			cancelled,
 		inProgress: pending + verified + inProgress,
 		totalResolved: resolved,
 		statusBreakdown: {
@@ -155,6 +181,7 @@ export const getReportStats = async () => {
 			IN_PROGRESS: inProgress,
 			RESOLVED: resolved,
 			REJECTED: statusCounts[ReportStatus.REJECTED] ?? 0,
+			CANCELLED: cancelled,
 		},
 	};
 };
@@ -188,8 +215,8 @@ export const getReportById = async (reportId) => {
 };
 
 export const updateReportStatus = async (reportId, actor, status) => {
-	if (actor.role !== 'ADMIN') {
-		throw new HttpError(403, 'Forbidden');
+	if (!actor?.id || !actor?.role) {
+		throw new HttpError(401, 'Unauthorized');
 	}
 
 	const existing = await prisma.report.findUnique({
@@ -201,11 +228,28 @@ export const updateReportStatus = async (reportId, actor, status) => {
 		throw new HttpError(404, 'Report not found');
 	}
 
+	const isAdmin = actor.role === 'ADMIN';
+	const isReporter = actor.role === 'USER' && actor.id === existing.reporterId;
+
+	if (!isAdmin && !isReporter) {
+		throw new HttpError(403, 'Forbidden');
+	}
+
+	if (!isAdmin && status !== ReportStatus.CANCELLED) {
+		throw new HttpError(403, 'Pengguna hanya dapat membatalkan laporannya sendiri');
+	}
+
+	if (FINAL_STATUSES.has(existing.status) && existing.status !== status) {
+		throw new HttpError(400, 'Status laporan final dan tidak dapat diubah');
+	}
+
 	const report = await prisma.report.update({
 		where: { id: reportId },
 		data: {
 			status,
 			resolvedAt: status === ReportStatus.RESOLVED ? new Date() : null,
+			cancelledByRole: status === ReportStatus.CANCELLED ? actor.role : null,
+			cancelledAt: status === ReportStatus.CANCELLED ? new Date() : null,
 		},
 		include: {
 			reporter: {
@@ -222,11 +266,76 @@ export const updateReportStatus = async (reportId, actor, status) => {
 		await createNotification({
 			userId: existing.reporterId,
 			title: 'Status laporan diperbarui',
-			message: `Laporan "${existing.title}" sekarang berstatus ${status}.`,
+			message: buildStatusChangeMessage({
+				status,
+				actorRole: actor.role,
+				reportTitle: existing.title,
+			}),
 			type: status === ReportStatus.RESOLVED ? NotificationType.REPORT_RESOLVED : NotificationType.REPORT_STATUS_CHANGED,
 			relatedId: report.id,
 		});
 	}
+
+	return report;
+};
+
+export const updateReport = async (reportId, actor, payload) => {
+	if (!actor?.id || !actor?.role) {
+		throw new HttpError(401, 'Unauthorized');
+	}
+
+	const existing = await prisma.report.findUnique({
+		where: { id: reportId },
+		select: { id: true, reporterId: true, status: true },
+	});
+
+	if (!existing) {
+		throw new HttpError(404, 'Report not found');
+	}
+
+	const isAdmin = actor.role === 'ADMIN';
+	const isReporter = actor.role === 'USER' && actor.id === existing.reporterId;
+
+	if (!isAdmin && !isReporter) {
+		throw new HttpError(403, 'Forbidden');
+	}
+
+	if (FINAL_STATUSES.has(existing.status)) {
+		throw new HttpError(400, 'Laporan tidak dapat diedit karena status sudah final');
+	}
+
+	const data = {};
+
+	if (payload.title !== undefined) data.title = payload.title;
+	if (payload.description !== undefined) data.description = payload.description;
+	if (payload.category !== undefined) data.category = payload.category;
+	if (payload.priority !== undefined) data.priority = payload.priority;
+	if (payload.address !== undefined) data.address = payload.address;
+	if (payload.latitude !== undefined) data.latitude = payload.latitude;
+	if (payload.longitude !== undefined) data.longitude = payload.longitude;
+
+	if (Object.keys(data).length === 0) {
+		throw new HttpError(400, 'Tidak ada data yang diperbarui');
+	}
+
+	if (isReporter && !isAdmin) {
+		data.editedByReporter = true;
+		data.lastEditedByReporterAt = new Date();
+	}
+
+	const report = await prisma.report.update({
+		where: { id: reportId },
+		data,
+		include: {
+			reporter: {
+				select: {
+					id: true,
+					name: true,
+					email: true,
+				},
+			},
+		},
+	});
 
 	return report;
 };

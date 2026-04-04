@@ -5,12 +5,12 @@ import {
 	getReportStatsHandler,
 	getReportDetailHandler,
 	listReportsHandler,
+	updateReportHandler,
 	updateReportStatusHandler,
 } from '../controllers/report-controller.js';
 import { createCommentHandler, listCommentsHandler } from '../controllers/comment-controller.js';
 import { getVoteSummaryHandler, removeVoteHandler, setVoteHandler } from '../controllers/vote-controller.js';
 import { authenticate } from '../middlewares/authenticate.js';
-import { authorizeRoles } from '../middlewares/authorize.js';
 import { normalizeCreateReportPayload } from '../middlewares/normalize-create-report-payload.js';
 import { optionalAuthenticate } from '../middlewares/optional-authenticate.js';
 import { reportImageUpload } from '../middlewares/report-upload.js';
@@ -21,6 +21,7 @@ import {
 	createReportSchema,
 	listReportsSchema,
 	reportIdParamSchema,
+	updateReportSchema,
 	updateReportStatusSchema,
 } from '../validators/report-validator.js';
 import { voteParamsSchema, voteSummarySchema, voteUpsertSchema } from '../validators/vote-validator.js';
@@ -32,10 +33,10 @@ reportRoutes.get('/stats', getReportStatsHandler);
 reportRoutes.post('/classify', authenticate, validate(classifyReportSchema), classifyReportHandler);
 reportRoutes.post('/', authenticate, reportImageUpload, normalizeCreateReportPayload, validate(createReportSchema), createReportHandler);
 reportRoutes.get('/:id', validate(reportIdParamSchema), getReportDetailHandler);
+reportRoutes.patch('/:id', authenticate, validate(updateReportSchema), updateReportHandler);
 reportRoutes.patch(
 	'/:id/status',
 	authenticate,
-	authorizeRoles('ADMIN'),
 	validate(updateReportStatusSchema),
 	updateReportStatusHandler,
 );

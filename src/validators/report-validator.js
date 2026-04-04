@@ -62,3 +62,23 @@ export const updateReportStatusSchema = z.object({
 		id: z.string().uuid(),
 	}),
 });
+
+export const updateReportSchema = z.object({
+	body: z
+		.object({
+			title: z.string().min(3).max(200).optional(),
+			description: z.string().min(10).max(3000).optional(),
+			category: z.array(categoryEnum).min(1).optional(),
+			priority: priorityEnum.optional(),
+			latitude: z.number().optional(),
+			longitude: z.number().optional(),
+			address: z.string().max(255).optional(),
+		})
+		.refine((value) => Object.keys(value).length > 0, {
+			message: 'Minimal satu field harus diisi untuk update laporan',
+		}),
+	query: z.object({}).optional(),
+	params: z.object({
+		id: z.string().uuid(),
+	}),
+});

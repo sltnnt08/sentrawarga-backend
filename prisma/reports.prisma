@@ -15,6 +15,10 @@ model Report {
     aiCategory   Category?
     aiConfidence Float?
     aiSpamFlag   Boolean?
+    cancelledByRole Role?
+    cancelledAt DateTime?
+    editedByReporter Boolean @default(false)
+    lastEditedByReporterAt DateTime?
     comments     Comment[]
     reporter     User          @relation(fields: [reporterId], references: [id])
     reportImages ReportImage[]
