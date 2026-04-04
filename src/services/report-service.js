@@ -1,11 +1,14 @@
 import { createNotification } from './notification-service.js';
+import { removeReportImage, uploadReportImage } from './report-image-storage-service.js';
 import { klasifikasiLaporan } from './ai-service.js';
 import { NotificationType, ReportStatus } from '../constants/prisma-enums.js';
 import { prisma } from '../lib/prisma.js';
 import { HttpError } from '../utils/http-error.js';
+import { randomUUID } from 'node:crypto';
 
 export const classifyReportPayload = async (payload) => {
 	const aiResult = await klasifikasiLaporan({
+		judul: payload.title,
 		deskripsi: payload.description,
 		fotoBase64: payload.imageBase64,
 		mimeType: payload.imageMimeType || 'image/jpeg',
@@ -22,34 +25,61 @@ export const classifyReportPayload = async (payload) => {
 export const createReport = async (reporterId, payload) => {
 	// Call AI service to classify the report
 	const aiResult = await classifyReportPayload(payload);
+	const reportId = randomUUID();
+	let uploadedReportImage = null;
 
-	const report = await prisma.report.create({
-		data: {
-			title: payload.title,
-			description: payload.description,
-			category: payload.category,
-			priority: payload.priority,
-			latitude: payload.latitude,
-			longitude: payload.longitude,
-			address: payload.address,
-			reporterId,
-			status: ReportStatus.PENDING,
-			aiCategory: aiResult.category,
-			aiConfidence: aiResult.confidenceScore,
-			aiSpamFlag: aiResult.isSpam,
-		},
-		include: {
-			reporter: {
-				select: {
-					id: true,
-					name: true,
-					email: true,
+	try {
+		uploadedReportImage = await uploadReportImage({
+			reportId,
+			imageBase64: payload.imageBase64,
+			imageMimeType: payload.imageMimeType,
+			imageOriginalName: payload.imageOriginalName,
+		});
+
+		const report = await prisma.report.create({
+			data: {
+				id: reportId,
+				title: payload.title,
+				description: payload.description,
+				category: payload.category,
+				priority: payload.priority,
+				latitude: payload.latitude,
+				longitude: payload.longitude,
+				address: payload.address,
+				reporterId,
+				status: ReportStatus.PENDING,
+				aiCategory: aiResult.category,
+				aiConfidence: aiResult.confidenceScore,
+				aiSpamFlag: aiResult.isSpam,
+				reportImages: uploadedReportImage
+					? {
+						create: [
+							{
+								url: uploadedReportImage.publicUrl,
+							},
+						],
+					}
+					: undefined,
+			},
+			include: {
+				reporter: {
+					select: {
+						id: true,
+						name: true,
+						email: true,
+					},
 				},
 			},
-		},
-	});
+		});
 
-	return report;
+		return report;
+	} catch (error) {
+		if (uploadedReportImage?.objectPath) {
+			await removeReportImage(uploadedReportImage.objectPath);
+		}
+
+		throw error;
+	}
 };
 
 export const listReports = async ({ status, priority, category, page = 1, limit = 10 }) => {

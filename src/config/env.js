@@ -51,6 +51,10 @@ const schema = z.object({
 	googleClientSecret: z.string().optional().default(''),
 	googleCallbackUrl: z.string().optional().default(''),
 	appBaseUrl: z.string().min(1).default('http://localhost:5173'),
+	supabaseUrl: z.string().optional().default(''),
+	supabaseServiceRoleKey: z.string().optional().default(''),
+	reportImageBucket: z.string().optional().default('report-images'),
+	reportImagePublicBaseUrl: z.string().optional().default(''),
 });
 
 const resolvedSendpulseSmtpPort = toInt(process.env.SENDPULSE_SMTP_PORT, 465);
@@ -89,6 +93,10 @@ const rawEnv = {
 	googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
 	googleCallbackUrl: process.env.GOOGLE_CALLBACK_URL,
 	appBaseUrl: process.env.APP_BASE_URL,
+	supabaseUrl: process.env.SUPABASE_URL,
+	supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+	reportImageBucket: process.env.SUPABASE_REPORT_IMAGE_BUCKET,
+	reportImagePublicBaseUrl: process.env.SUPABASE_REPORT_IMAGE_PUBLIC_BASE_URL,
 };
 
 const parsedEnv = schema.parse(rawEnv);

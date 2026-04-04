@@ -16,6 +16,7 @@ export const createReportSchema = z.object({
 		address: z.string().max(255).optional(),
 		imageBase64: z.string().optional(),
 		imageMimeType: z.string().default('image/jpeg').optional(),
+		imageOriginalName: z.string().optional(),
 	}),
 	query: z.object({}).optional(),
 	params: z.object({}).optional(),
@@ -23,6 +24,7 @@ export const createReportSchema = z.object({
 
 export const classifyReportSchema = z.object({
 	body: z.object({
+		title: z.string().min(3).max(200),
 		description: z.string().min(10).max(3000),
 		imageBase64: z.string().optional(),
 		imageMimeType: z.string().default('image/jpeg').optional(),

@@ -114,6 +114,10 @@ Sumber konfigurasi ada di file `.env`.
 | `SENDPULSE_REPLY_TO`   | Opsional   | Alamat balasan email                                         |
 | `SENDPULSE_TEST_TO`    | Opsional   | Tujuan email untuk `npm run test:sendpulse`                 |
 | `GOOGLE_CLIENT_ID`     | Opsional   | Wajib diisi jika ingin mengaktifkan login/daftar Google     |
+| `SUPABASE_URL`         | Opsional   | URL project Supabase (dibutuhkan jika upload foto laporan diaktifkan) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Opsional | Service role key untuk upload foto via backend ke Supabase Storage |
+| `SUPABASE_REPORT_IMAGE_BUCKET` | Opsional | Nama bucket Supabase Storage untuk foto laporan (contoh: `report-images`) |
+| `SUPABASE_REPORT_IMAGE_PUBLIC_BASE_URL` | Opsional | Override base URL publik jika file disajikan lewat CDN/custom domain |
 | `GEMINI_API_KEY`       | Opsional   | API key Gemini untuk fitur klasifikasi otomatis laporan     |
 
 Catatan SMTP SendPulse:
@@ -288,6 +292,8 @@ Mode yang didukung untuk `POST /api/reports`:
 
 - `application/json` (backward compatible) dengan `imageBase64`
 - `multipart/form-data` dengan field file `image`
+
+Jika request menyertakan gambar, backend akan mencoba upload file ke Supabase Storage lalu menyimpan URL publiknya ke relasi `ReportImages`. Pastikan bucket sudah ada dan variabel `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_REPORT_IMAGE_BUCKET` sudah terisi.
 
 Format file gambar multipart yang didukung: `jpg`, `jpeg`, `png`, `webp`, `heic`, `heif` (maksimal 5MB).
 

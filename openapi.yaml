@@ -936,8 +936,12 @@ components:
 
     ClassifyReportRequest:
       type: object
-      required: [description]
+      required: [title, description]
       properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 200
         description:
           type: string
           minLength: 10

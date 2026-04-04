@@ -88,6 +88,7 @@ export const normalizeCreateReportPayload = (req, res, next) => {
 		if (req.file?.buffer) {
 			normalizedBody.imageBase64 = req.file.buffer.toString('base64');
 			normalizedBody.imageMimeType = req.file.mimetype;
+			normalizedBody.imageOriginalName = req.file.originalname;
 		}
 
 		req.body = normalizedBody;

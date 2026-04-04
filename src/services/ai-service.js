@@ -15,6 +15,7 @@ const VALID_CATEGORIES = [
 ];
 
 async function klasifikasiLaporan({
+	judul,
 	deskripsi,
 	fotoBase64,
 	mimeType = 'image/jpeg',
@@ -37,6 +38,8 @@ async function klasifikasiLaporan({
           "isSpam": <true jika laporan tidak relevan/palsu, false jika legitimate>
         }
         Hanya kembalikan JSON, tanpa penjelasan tambahan.
+
+				Judul laporan: "${judul || ''}"
         
         Deskripsi laporan: "${deskripsi}"`;
 
