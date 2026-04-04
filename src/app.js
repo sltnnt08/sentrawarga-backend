@@ -4,6 +4,7 @@ import { env } from './config/env.js';
 import { errorHandler, notFoundHandler } from './middlewares/error-handler.js';
 import { requestContext } from './middlewares/request-context.js';
 import { requestLogger } from './middlewares/request-logger.js';
+import { responseStatusCode } from './middlewares/response-status-code.js';
 import { apiRateLimiter, isCorsOriginAllowed, securityHeaders } from './middlewares/security.js';
 import { authRoutes } from './routes/auth-routes.js';
 import { apiRoutes } from './routes/index.js';
@@ -16,6 +17,7 @@ if (env.trustProxy) {
 
 app.disable('x-powered-by');
 app.use(requestContext);
+app.use(responseStatusCode);
 app.use(requestLogger);
 app.use(securityHeaders);
 
@@ -51,7 +53,30 @@ app.get('/healthz', (req, res) => {
 	});
 });
 
+app.get('/api/healthz', (req, res) => {
+	res.json({
+		success: true,
+		status: 'ok',
+		service: 'sentrawarga-backend',
+		timestamp: new Date().toISOString(),
+	});
+});
+
 app.get('/readyz', async (req, res, next) => {
+	try {
+		const { prisma } = await import('./lib/prisma.js');
+		await prisma.$queryRawUnsafe('SELECT 1');
+		res.json({
+			success: true,
+			status: 'ready',
+			timestamp: new Date().toISOString(),
+		});
+	} catch (error) {
+		next(error);
+	}
+});
+
+app.get('/api/readyz', async (req, res, next) => {
 	try {
 		const { prisma } = await import('./lib/prisma.js');
 		await prisma.$queryRawUnsafe('SELECT 1');

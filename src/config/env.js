@@ -1,6 +1,11 @@
 import 'dotenv/config';
 import { z } from 'zod';
 
+const defaultCorsOriginByNodeEnv =
+	process.env.NODE_ENV === 'production'
+		? 'https://sentrawarga.my.id,https://www.sentrawarga.my.id'
+		: 'http://localhost:5173,http://localhost:8080,http://127.0.0.1:5173,http://127.0.0.1:8080';
+
 const toInt = (value, fallback) => {
 	const parsed = Number.parseInt(value ?? '', 10);
 	return Number.isNaN(parsed) ? fallback : parsed;
@@ -22,8 +27,10 @@ const schema = z.object({
 	corsOrigin: z
 		.string()
 		.min(1)
-		.default('http://localhost:5173,https://sentrawarga.my.id,https://www.sentrawarga.my.id'),
+		.default(defaultCorsOriginByNodeEnv),
 	databaseUrl: z.string().min(1),
+	localDatabaseUrl: z.string().optional().default(''),
+	databaseSslRejectUnauthorized: z.boolean().default(true),
 	jwtSecret: z.string().min(16),
 	jwtExpiresIn: z.string().min(1).default('1d'),
 	bodyLimit: z.string().min(2).default('1mb'),
@@ -57,6 +64,11 @@ const rawEnv = {
 	port: toInt(process.env.PORT, 3000),
 	corsOrigin: process.env.CORS_ORIGIN,
 	databaseUrl: process.env.DATABASE_URL,
+	localDatabaseUrl: process.env.LOCAL_DATABASE_URL,
+	databaseSslRejectUnauthorized: toBoolean(
+		process.env.DATABASE_SSL_REJECT_UNAUTHORIZED,
+		process.env.NODE_ENV === 'production',
+	),
 	jwtSecret: process.env.JWT_SECRET,
 	jwtExpiresIn: process.env.JWT_EXPIRES_IN,
 	bodyLimit: process.env.BODY_LIMIT,

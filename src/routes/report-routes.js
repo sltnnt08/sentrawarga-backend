@@ -9,7 +9,9 @@ import { createCommentHandler, listCommentsHandler } from '../controllers/commen
 import { getVoteSummaryHandler, removeVoteHandler, setVoteHandler } from '../controllers/vote-controller.js';
 import { authenticate } from '../middlewares/authenticate.js';
 import { authorizeRoles } from '../middlewares/authorize.js';
+import { normalizeCreateReportPayload } from '../middlewares/normalize-create-report-payload.js';
 import { optionalAuthenticate } from '../middlewares/optional-authenticate.js';
+import { reportImageUpload } from '../middlewares/report-upload.js';
 import { validate } from '../middlewares/validate.js';
 import { createCommentSchema, listCommentsSchema } from '../validators/comment-validator.js';
 import {
@@ -23,7 +25,7 @@ import { voteParamsSchema, voteSummarySchema, voteUpsertSchema } from '../valida
 const reportRoutes = Router();
 
 reportRoutes.get('/', validate(listReportsSchema), listReportsHandler);
-reportRoutes.post('/', authenticate, validate(createReportSchema), createReportHandler);
+reportRoutes.post('/', authenticate, reportImageUpload, normalizeCreateReportPayload, validate(createReportSchema), createReportHandler);
 reportRoutes.get('/:id', validate(reportIdParamSchema), getReportDetailHandler);
 reportRoutes.patch(
 	'/:id/status',

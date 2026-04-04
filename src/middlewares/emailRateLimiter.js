@@ -1,4 +1,4 @@
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 
 // Rate limit per email (not per IP)
 // Example: max 3 requests per hour per email
@@ -8,7 +8,7 @@ export const emailRateLimiter = rateLimit({
   keyGenerator: (req) => {
     // Use normalized email as key if present, else fallback to IP
     const email = req.body?.email || req.query?.email || '';
-    return String(email).trim().toLowerCase() || req.ip;
+    return String(email).trim().toLowerCase() || ipKeyGenerator(req.ip);
   },
   message: {
     success: false,

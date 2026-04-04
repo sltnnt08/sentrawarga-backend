@@ -2,7 +2,21 @@ import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import { env } from '../config/env.js';
 
-const defaultCorsOrigins = ['http://localhost:5173', 'https://sentrawarga.my.id', 'https://www.sentrawarga.my.id'];
+const developmentCorsOrigins = [
+	'http://localhost:5173',
+	'http://localhost:8080',
+	'http://127.0.0.1:5173',
+	'http://127.0.0.1:8080',
+	'http://localhost:3000',
+	'http://127.0.0.1:3000',
+];
+
+const productionCorsOrigins = [
+	'https://sentrawarga.my.id',
+	'https://www.sentrawarga.my.id',
+];
+
+const defaultCorsOrigins = env.nodeEnv === 'production' ? productionCorsOrigins : developmentCorsOrigins;
 
 const toCorsOrigins = (value) =>
 	value

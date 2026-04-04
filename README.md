@@ -238,7 +238,7 @@ Aplikasi terintegrasi dengan Google Gemini API (gemini-2.5-flash-lite) untuk kla
 
 ### Fitur Utama
 
-- **Klasifikasi Multi-modal**: Menerima deskripsi teks dan gambar base64 dalam satu API call
+- **Klasifikasi Multi-modal**: Menerima deskripsi teks dan gambar (base64 JSON atau file multipart) dalam satu API call
 - **Input Fleksibel**: Gambar opsional, fokus pada deskripsi teks sebagai primary input
 - **Validasi Kategori**: Memvalidasi response terhadap enum kategori aktual (CRIMINAL, TRASH, FLOOD, POLLUTION, ROADS_ISSUE, PUBLIC_DISTURBANCE, ACCIDENTS, OTHERS)
 - **Confidence Scoring**: Menghasilkan nilai confidence 0.0-1.0
@@ -283,6 +283,30 @@ Sebelum production, pastikan:
 ```
 
 ### Contoh API Usage
+
+Mode yang didukung untuk `POST /api/reports`:
+
+- `application/json` (backward compatible) dengan `imageBase64`
+- `multipart/form-data` dengan field file `image`
+
+Format file gambar multipart yang didukung: `jpg`, `jpeg`, `png`, `webp`, `heic`, `heif` (maksimal 5MB).
+
+Contoh `multipart/form-data` (direkomendasikan untuk fitur upload user):
+
+```bash
+curl -X POST "http://localhost:3000/api/reports" \
+  -H "Authorization: Bearer <token>" \
+  -F "title=Sampah Menumpuk" \
+  -F "description=Terdapat sampah plastik yang sangat banyak menumpuk di samping toko elektronik menyebabkan polusi visual dan lingkungan" \
+  -F "category=[\"TRASH\"]" \
+  -F "priority=HIGH" \
+  -F "address=Jl. Merdeka No. 123, Jakarta" \
+  -F "latitude=-6.2088" \
+  -F "longitude=106.8456" \
+  -F "image=@/path/to/photo.jpg"
+```
+
+Contoh `application/json` (legacy):
 
 ```bash
 POST /api/reports
@@ -339,7 +363,7 @@ Response mencakup field AI classification:
 ✅ **Input Validation**
 
 - Deskripsi laporan: 10-3000 karakter
-- Image base64: optional
+- Image base64/file: optional
 - MIME type: validated/defaulted
 - Kategori response: validated terhadap enum
 

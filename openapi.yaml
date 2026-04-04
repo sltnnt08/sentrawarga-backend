@@ -157,7 +157,7 @@ paths:
           $ref: '#/components/responses/InternalServerError'
     post:
       tags: [Reports]
-      summary: Create report
+      summary: Create report (JSON or multipart upload)
       security:
         - bearerAuth: []
       requestBody:
@@ -166,6 +166,9 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateReportRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateReportMultipartRequest'
       responses:
         '201':
           description: Report created
@@ -752,6 +755,20 @@ components:
         updatedAt:
           type: string
           format: date-time
+        aiCategory:
+          anyOf:
+            - $ref: '#/components/schemas/Category'
+            - type: 'null'
+        aiConfidence:
+          type:
+            - number
+            - 'null'
+          minimum: 0
+          maximum: 1
+        aiSpamFlag:
+          type:
+            - boolean
+            - 'null'
 
     ReportWithReporter:
       allOf:
@@ -764,7 +781,7 @@ components:
 
     ReportImage:
       type: object
-      required: [id, reportId, imageUrl, createdAt]
+      required: [id, reportId, url]
       properties:
         id:
           type: string
@@ -772,11 +789,8 @@ components:
         reportId:
           type: string
           format: uuid
-        imageUrl:
+        url:
           type: string
-        createdAt:
-          type: string
-          format: date-time
 
     ReportCount:
       type: object
@@ -851,6 +865,48 @@ components:
         address:
           type: string
           maxLength: 255
+        imageBase64:
+          type: string
+          description: Optional base64 image payload for backward compatibility.
+        imageMimeType:
+          type: string
+          default: image/jpeg
+
+    CreateReportMultipartRequest:
+      type: object
+      required: [title, description, category, priority]
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 200
+        description:
+          type: string
+          minLength: 10
+          maxLength: 3000
+        category:
+          oneOf:
+            - type: array
+              minItems: 1
+              items:
+                $ref: '#/components/schemas/Category'
+            - type: string
+              description: JSON array string atau koma-separated string, contoh ["TRASH"] atau TRASH,FLOOD.
+        priority:
+          $ref: '#/components/schemas/Priority'
+        latitude:
+          type: string
+          description: Angka desimal dalam bentuk string pada form-data.
+        longitude:
+          type: string
+          description: Angka desimal dalam bentuk string pada form-data.
+        address:
+          type: string
+          maxLength: 255
+        image:
+          type: string
+          format: binary
+          description: Optional image file (jpg, jpeg, png, webp, heic, heif) maksimum 5MB.
 
     UpdateReportStatusRequest:
       type: object
