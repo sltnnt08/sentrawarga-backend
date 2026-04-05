@@ -10,7 +10,7 @@ const wilayahPathMap = {
 	villages: '/villages/:code.json',
 };
 
-const isValidCode = (code) => /^[0-9]{2,10}$/.test(code);
+const isValidCode = (code) => /^[0-9]{2}(?:\.[0-9]{2,4}){0,3}$/.test(code);
 
 const resolveWilayahPath = (resource, code) => {
 	const template = wilayahPathMap[resource];
@@ -23,11 +23,13 @@ const resolveWilayahPath = (resource, code) => {
 		return template;
 	}
 
-	if (!code || !isValidCode(code)) {
+	const normalizedCode = typeof code === 'string' ? code.trim() : '';
+
+	if (!normalizedCode || !isValidCode(normalizedCode)) {
 		throw new HttpError(400, 'Invalid wilayah code');
 	}
 
-	return template.replace(':code', code);
+	return template.replace(':code', normalizedCode);
 };
 
 const fetchWilayahJson = async (path) => {
