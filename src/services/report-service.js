@@ -21,13 +21,25 @@ const FINAL_STATUSES = new Set([
 	ReportStatus.CANCELLED,
 ]);
 
-const buildStatusChangeMessage = ({ status, actorRole, reportTitle }) => {
+const buildStatusChangeMessage = ({ status, actorRole, reportTitle, feedback }) => {
 	if (status === ReportStatus.CANCELLED) {
 		const cancelledBy = actorRole === 'ADMIN' ? 'admin' : 'pengguna';
-		return `Laporan "${reportTitle}" dibatalkan oleh ${cancelledBy}.`;
+		const baseMessage = `Laporan "${reportTitle}" dibatalkan oleh ${cancelledBy}.`;
+
+		if (actorRole === 'ADMIN' && feedback) {
+			return `${baseMessage} Catatan admin: ${feedback}`;
+		}
+
+		return baseMessage;
 	}
 
-	return `Laporan "${reportTitle}" sekarang berstatus ${STATUS_LABEL_ID[status] ?? status}.`;
+	const baseMessage = `Laporan "${reportTitle}" sekarang berstatus ${STATUS_LABEL_ID[status] ?? status}.`;
+
+	if (actorRole === 'ADMIN' && feedback) {
+		return `${baseMessage} Catatan admin: ${feedback}`;
+	}
+
+	return baseMessage;
 };
 
 export const classifyReportPayload = async (payload) => {
@@ -214,10 +226,12 @@ export const getReportById = async (reportId) => {
 	return report;
 };
 
-export const updateReportStatus = async (reportId, actor, status) => {
+export const updateReportStatus = async (reportId, actor, status, feedback) => {
 	if (!actor?.id || !actor?.role) {
 		throw new HttpError(401, 'Unauthorized');
 	}
+
+	const sanitizedFeedback = typeof feedback === 'string' ? feedback.trim() : undefined;
 
 	const existing = await prisma.report.findUnique({
 		where: { id: reportId },
@@ -239,27 +253,51 @@ export const updateReportStatus = async (reportId, actor, status) => {
 		throw new HttpError(403, 'Pengguna hanya dapat membatalkan laporannya sendiri');
 	}
 
+	if (!isAdmin && sanitizedFeedback) {
+		throw new HttpError(403, 'Hanya admin yang dapat mengirim feedback laporan');
+	}
+
 	if (FINAL_STATUSES.has(existing.status) && existing.status !== status) {
 		throw new HttpError(400, 'Status laporan final dan tidak dapat diubah');
 	}
 
-	const report = await prisma.report.update({
-		where: { id: reportId },
-		data: {
-			status,
-			resolvedAt: status === ReportStatus.RESOLVED ? new Date() : null,
-			cancelledByRole: status === ReportStatus.CANCELLED ? actor.role : null,
-			cancelledAt: status === ReportStatus.CANCELLED ? new Date() : null,
-		},
-		include: {
-			reporter: {
-				select: {
-					id: true,
-					name: true,
-					email: true,
+	const shouldRewardVerificationPoints =
+		isAdmin &&
+		existing.status !== ReportStatus.VERIFIED &&
+		status === ReportStatus.VERIFIED;
+
+	const report = await prisma.$transaction(async (tx) => {
+		const updatedReport = await tx.report.update({
+			where: { id: reportId },
+			data: {
+				status,
+				resolvedAt: status === ReportStatus.RESOLVED ? new Date() : null,
+				cancelledByRole: status === ReportStatus.CANCELLED ? actor.role : null,
+				cancelledAt: status === ReportStatus.CANCELLED ? new Date() : null,
+			},
+			include: {
+				reporter: {
+					select: {
+						id: true,
+						name: true,
+						email: true,
+					},
 				},
 			},
-		},
+		});
+
+		if (shouldRewardVerificationPoints) {
+			await tx.user.update({
+				where: { id: existing.reporterId },
+				data: {
+					points: {
+						increment: 10,
+					},
+				},
+			});
+		}
+
+		return updatedReport;
 	});
 
 	if (existing.status !== status) {
@@ -270,8 +308,17 @@ export const updateReportStatus = async (reportId, actor, status) => {
 				status,
 				actorRole: actor.role,
 				reportTitle: existing.title,
+				feedback: sanitizedFeedback,
 			}),
 			type: status === ReportStatus.RESOLVED ? NotificationType.REPORT_RESOLVED : NotificationType.REPORT_STATUS_CHANGED,
+			relatedId: report.id,
+		});
+	} else if (isAdmin && sanitizedFeedback) {
+		await createNotification({
+			userId: existing.reporterId,
+			title: 'Feedback admin untuk laporan',
+			message: `Catatan admin untuk laporan "${existing.title}": ${sanitizedFeedback}`,
+			type: NotificationType.ADMIN_REPLY,
 			relatedId: report.id,
 		});
 	}

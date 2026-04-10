@@ -63,6 +63,7 @@ const sanitizeUser = (user) => ({
 	email: user.email,
 	address: user.address,
 	role: user.role,
+	points: typeof user.points === 'number' ? user.points : 0,
 	emailVerified: user.emailVerified,
 	createdAt: user.createdAt,
 	updatedAt: user.updatedAt,

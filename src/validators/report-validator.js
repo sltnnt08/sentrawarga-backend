@@ -56,6 +56,7 @@ export const reportIdParamSchema = z.object({
 export const updateReportStatusSchema = z.object({
 	body: z.object({
 		status: reportStatusEnum,
+		feedback: z.string().trim().min(3).max(1000).optional(),
 	}),
 	query: z.object({}).optional(),
 	params: z.object({

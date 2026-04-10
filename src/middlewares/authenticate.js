@@ -13,7 +13,7 @@ export const authenticate = async (req, res, next) => {
 		const payload = verifyAccessToken(token);
 		const user = await prisma.user.findUnique({
 			where: { id: payload.sub },
-			select: { id: true, name: true, email: true, role: true, emailVerified: true },
+			select: { id: true, name: true, email: true, role: true, points: true, emailVerified: true },
 		});
 
 		if (!user) {

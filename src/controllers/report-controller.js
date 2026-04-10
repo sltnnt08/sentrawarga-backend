@@ -52,7 +52,12 @@ export const getReportDetailHandler = asyncHandler(async (req, res) => {
 });
 
 export const updateReportStatusHandler = asyncHandler(async (req, res) => {
-	const report = await updateReportStatus(req.validated.params.id, req.user, req.validated.body.status);
+	const report = await updateReportStatus(
+		req.validated.params.id,
+		req.user,
+		req.validated.body.status,
+		req.validated.body.feedback,
+	);
 	res.json({
 		success: true,
 		message: 'Report status updated',

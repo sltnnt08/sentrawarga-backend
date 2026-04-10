@@ -233,6 +233,7 @@ paths:
     patch:
       tags: [Reports]
       summary: Update report status (admin only)
+      description: Admin dapat mengubah status laporan dan menambahkan feedback opsional untuk reporter.
       security:
         - bearerAuth: []
       parameters:
@@ -593,7 +594,7 @@ components:
         ]
     ReportStatus:
       type: string
-      enum: [PENDING, VERIFIED, IN_PROGRESS, RESOLVED, REJECTED]
+      enum: [PENDING, VERIFIED, IN_PROGRESS, RESOLVED, REJECTED, CANCELLED]
     VoteType:
       type: string
       enum: [UP, DOWN]
@@ -986,6 +987,11 @@ components:
       properties:
         status:
           $ref: '#/components/schemas/ReportStatus'
+        feedback:
+          type: string
+          minLength: 3
+          maxLength: 1000
+          description: Feedback opsional dari admin untuk reporter.
 
     ReportListPayload:
       type: object
