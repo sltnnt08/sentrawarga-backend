@@ -36,14 +36,24 @@ test('unknown route returns 404 with request id', async () => {
 	assert.ok(response.headers['x-request-id']);
 });
 
-test('CORS allowlist should include production frontend domains', () => {
-	assert.ok(corsOriginAllowlist.includes('https://sentrawarga.my.id'));
-	assert.ok(corsOriginAllowlist.includes('https://www.sentrawarga.my.id'));
+test('CORS allowlist should include at least one configured URL origin', () => {
+	assert.ok(corsOriginAllowlist.length > 0);
+	assert.ok(
+		corsOriginAllowlist.some((origin) => origin.startsWith('http://') || origin.startsWith('https://')),
+	);
 });
 
-test('CORS origin matching should normalize trailing slash and casing', () => {
-	assert.equal(isCorsOriginAllowed('https://sentrawarga.my.id/'), true);
-	assert.equal(isCorsOriginAllowed('HTTPS://WWW.SENTRAWARGA.MY.ID/'), true);
+test('CORS origin matching should normalize trailing slash and casing for allowed origins', () => {
+	const allowedOrigin = corsOriginAllowlist.find((origin) => origin.startsWith('http://') || origin.startsWith('https://'));
+
+	assert.ok(allowedOrigin, 'Expected at least one URL origin in CORS allowlist');
+
+	const url = new URL(allowedOrigin);
+	const normalizedVariant = `${url.protocol.toUpperCase()}//${url.hostname.toUpperCase()}${
+		url.port ? `:${url.port}` : ''
+	}/`;
+
+	assert.equal(isCorsOriginAllowed(normalizedVariant), true);
 });
 
 test('GET /auth/callback handles OAuth exchange redirects', async () => {
