@@ -283,6 +283,7 @@ export const updateReportStatus = async (reportId, actor, status, feedback) => {
 			where: { id: reportId },
 			data: {
 				status,
+				feedback: isAdmin && sanitizedFeedback ? sanitizedFeedback : undefined,
 				resolvedAt: status === ReportStatus.RESOLVED ? new Date() : null,
 				cancelledByRole: status === ReportStatus.CANCELLED ? actor.role : null,
 				cancelledAt: status === ReportStatus.CANCELLED ? new Date() : null,

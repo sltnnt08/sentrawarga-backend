@@ -2,6 +2,7 @@ model Report {
     id           String        @id @default(uuid())
     title        String
     description  String
+    feedback     String?
     priority     Priority
     resolvedAt   DateTime?
     createdAt    DateTime      @default(now())

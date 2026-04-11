@@ -13,12 +13,17 @@ const resolveConnectionString = () => {
 	const localConnectionString = isNonEmptyString(env.localDatabaseUrl)
 		? env.localDatabaseUrl.trim()
 		: '';
+	const useLocalConnection = process.env.PRISMA_USE_LOCAL_DATABASE === 'true';
+
+	if (env.nodeEnv !== 'production' && localConnectionString && useLocalConnection) {
+		return localConnectionString;
+	}
 
 	if (primaryConnectionString) {
 		return primaryConnectionString;
 	}
 
-	if (env.nodeEnv !== 'production' && localConnectionString) {
+	if (localConnectionString) {
 		return localConnectionString;
 	}
 
