@@ -42,6 +42,26 @@ const buildStatusChangeMessage = ({ status, actorRole, reportTitle, feedback }) 
 	return baseMessage;
 };
 
+const extractFeedbackFromNotificationMessage = (message) => {
+	if (typeof message !== 'string' || !message.includes('Catatan admin')) {
+		return null;
+	}
+
+	const statusMatch = message.match(/Catatan admin:\s*([\s\S]+)$/);
+	if (statusMatch?.[1]) {
+		const feedback = statusMatch[1].trim();
+		return feedback.length > 0 ? feedback : null;
+	}
+
+	const adminReplyMatch = message.match(/Catatan admin untuk laporan "[\s\S]+?":\s*([\s\S]+)$/);
+	if (adminReplyMatch?.[1]) {
+		const feedback = adminReplyMatch[1].trim();
+		return feedback.length > 0 ? feedback : null;
+	}
+
+	return null;
+};
+
 export const classifyReportPayload = async (payload) => {
 	const aiResult = await klasifikasiLaporan({
 		judul: payload.title,
@@ -231,7 +251,43 @@ export const getReportById = async (reportId) => {
 		throw new HttpError(404, 'Report not found');
 	}
 
-	return report;
+	if (report.feedback) {
+		return report;
+	}
+
+	const relatedAdminNote = await prisma.notification.findFirst({
+		where: {
+			userId: report.reporterId,
+			relatedId: report.id,
+			type: {
+				in: [
+					NotificationType.ADMIN_REPLY,
+					NotificationType.REPORT_STATUS_CHANGED,
+					NotificationType.REPORT_RESOLVED,
+				],
+			},
+			message: {
+				contains: 'Catatan admin',
+			},
+		},
+		orderBy: {
+			createdAt: 'desc',
+		},
+		select: {
+			message: true,
+		},
+	});
+
+	const legacyFeedback = extractFeedbackFromNotificationMessage(relatedAdminNote?.message);
+
+	if (!legacyFeedback) {
+		return report;
+	}
+
+	return {
+		...report,
+		feedback: legacyFeedback,
+	};
 };
 
 export const updateReportStatus = async (reportId, actor, status, feedback) => {
