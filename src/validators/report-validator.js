@@ -4,6 +4,17 @@ import { z } from 'zod';
 const categoryEnum = z.nativeEnum(Category);
 const priorityEnum = z.nativeEnum(Priority);
 const reportStatusEnum = z.nativeEnum(ReportStatus);
+const booleanQuery = z.preprocess((value) => {
+	if (value === 'true' || value === true) {
+		return true;
+	}
+
+	if (value === 'false' || value === false) {
+		return false;
+	}
+
+	return value;
+}, z.boolean());
 
 export const createReportSchema = z.object({
 	body: z.object({
@@ -39,6 +50,7 @@ export const listReportsSchema = z.object({
 		status: reportStatusEnum.optional(),
 		priority: priorityEnum.optional(),
 		category: categoryEnum.optional(),
+		hasImage: booleanQuery.optional(),
 		page: z.coerce.number().int().positive().optional(),
 		limit: z.coerce.number().int().positive().max(50).optional(),
 	}),

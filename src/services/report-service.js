@@ -118,12 +118,13 @@ export const createReport = async (reporterId, payload) => {
 	}
 };
 
-export const listReports = async ({ status, priority, category, page = 1, limit = 10 }) => {
+export const listReports = async ({ status, priority, category, hasImage = false, page = 1, limit = 10 }) => {
 	const skip = (page - 1) * limit;
 	const where = {
 		...(status ? { status } : {}),
 		...(priority ? { priority } : {}),
 		...(category ? { category: { has: category } } : {}),
+		...(hasImage ? { reportImages: { some: {} } } : {}),
 	};
 
 	const [items, total] = await Promise.all([
@@ -138,6 +139,13 @@ export const listReports = async ({ status, priority, category, page = 1, limit 
 						id: true,
 						name: true,
 					},
+				},
+				reportImages: {
+					select: {
+						id: true,
+						url: true,
+					},
+					take: 1,
 				},
 			},
 		}),
@@ -247,6 +255,10 @@ export const updateReportStatus = async (reportId, actor, status, feedback) => {
 
 	if (!isAdmin && !isReporter) {
 		throw new HttpError(403, 'Forbidden');
+	}
+
+	if (status === ReportStatus.CANCELLED && !isReporter) {
+		throw new HttpError(403, 'Hanya pelapor yang dapat membatalkan laporannya sendiri');
 	}
 
 	if (!isAdmin && status !== ReportStatus.CANCELLED) {

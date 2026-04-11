@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import request from 'supertest';
 import { app } from '../src/app.js';
 import { setSupabaseClientForTest } from '../src/controllers/auth-controller.js';
+import { corsOriginAllowlist, isCorsOriginAllowed } from '../src/middlewares/security.js';
 
 test('GET / returns API running message', async () => {
 	const response = await request(app).get('/');
@@ -33,6 +34,16 @@ test('unknown route returns 404 with request id', async () => {
 	assert.equal(response.body.message, 'Route not found');
 	assert.ok(response.body.requestId);
 	assert.ok(response.headers['x-request-id']);
+});
+
+test('CORS allowlist should include production frontend domains', () => {
+	assert.ok(corsOriginAllowlist.includes('https://sentrawarga.my.id'));
+	assert.ok(corsOriginAllowlist.includes('https://www.sentrawarga.my.id'));
+});
+
+test('CORS origin matching should normalize trailing slash and casing', () => {
+	assert.equal(isCorsOriginAllowed('https://sentrawarga.my.id/'), true);
+	assert.equal(isCorsOriginAllowed('HTTPS://WWW.SENTRAWARGA.MY.ID/'), true);
 });
 
 test('GET /auth/callback handles OAuth exchange redirects', async () => {
