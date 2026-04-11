@@ -4,5 +4,6 @@ model ReportImage {
   reportId String
   report   Report @relation(fields: [reportId], references: [id])
 
+  @@index([reportId])
   @@map("ReportImages")
 }

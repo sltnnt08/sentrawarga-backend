@@ -51,6 +51,7 @@ export const listReportsSchema = z.object({
 		priority: priorityEnum.optional(),
 		category: categoryEnum.optional(),
 		hasImage: booleanQuery.optional(),
+		includeTotal: booleanQuery.optional(),
 		page: z.coerce.number().int().positive().optional(),
 		limit: z.coerce.number().int().positive().max(50).optional(),
 	}),

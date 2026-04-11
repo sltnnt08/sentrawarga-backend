@@ -138,7 +138,7 @@ export const createReport = async (reporterId, payload) => {
 	}
 };
 
-export const listReports = async ({ status, priority, category, hasImage = false, page = 1, limit = 10 }) => {
+export const listReports = async ({ status, priority, category, hasImage = false, includeTotal = true, page = 1, limit = 10 }) => {
 	const skip = (page - 1) * limit;
 	const where = {
 		...(status ? { status } : {}),
@@ -147,30 +147,43 @@ export const listReports = async ({ status, priority, category, hasImage = false
 		...(hasImage ? { reportImages: { some: {} } } : {}),
 	};
 
-	const [items, total] = await Promise.all([
-		prisma.report.findMany({
-			where,
-			skip,
-			take: limit,
-			orderBy: { createdAt: 'desc' },
-			include: {
-				reporter: {
-					select: {
-						id: true,
-						name: true,
-					},
-				},
-				reportImages: {
-					select: {
-						id: true,
-						url: true,
-					},
-					take: 1,
+	const itemsPromise = prisma.report.findMany({
+		where,
+		skip,
+		take: limit,
+		orderBy: { createdAt: 'desc' },
+		include: {
+			reporter: {
+				select: {
+					id: true,
+					name: true,
 				},
 			},
-		}),
-		prisma.report.count({ where }),
-	]);
+			reportImages: {
+				select: {
+					id: true,
+					url: true,
+				},
+				take: 1,
+			},
+		},
+	});
+
+	if (!includeTotal) {
+		const items = await itemsPromise;
+
+		return {
+			items,
+			pagination: {
+				total: items.length,
+				page,
+				limit,
+				totalPages: 1,
+			},
+		};
+	}
+
+	const [items, total] = await Promise.all([itemsPromise, prisma.report.count({ where })]);
 
 	return {
 		items,

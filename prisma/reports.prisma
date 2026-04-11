@@ -24,4 +24,9 @@ model Report {
     reporter     User          @relation(fields: [reporterId], references: [id])
     reportImages ReportImage[]
     votes        Vote[]
+
+    @@index([createdAt(sort: Desc)])
+    @@index([status, createdAt(sort: Desc)])
+    @@index([priority, createdAt(sort: Desc)])
+    @@index([reporterId, createdAt(sort: Desc)])
 }
